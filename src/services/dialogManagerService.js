@@ -30,16 +30,20 @@ mod.provider('dialogManager', function () {
 
         var configData = _getDialogConfigData(initialData);
 
-        if (initialData.dynamicParams) {
+        if (initialData.dynamicParams) { // for legacy reasons
             configData.dynamicParams = initialData.dynamicParams;
         }
 
-        Object.keys(configData).forEach(function (prop) {
+        if (initialData.scope) {
+            configData.scope = initialData.scope;
+        }
+
+        Object.keys(configData).forEach(function (prop) { // for legacy reasons
             delete initialData[prop];
         });
 
         angular.extend(this, configData);
-        this.data = initialData;
+        this.data = initialData;  // for legacy reasons
     };
 
     return {

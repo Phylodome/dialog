@@ -216,7 +216,6 @@ mod.directive('dialogRoot', [
                     utils.updateMask(tMask, namespaceForEvents);
                 };
 
-
                 var closeDialog = function (e, dialog) {
                     dialogManager.unregisterDialog(dialog.label);
                     !dialogManager.hasAny(namespaceForEvents) && element.removeClass(rootClass);
@@ -227,11 +226,11 @@ mod.directive('dialogRoot', [
                 $rootScope.$on(utils.eventLabel(namespaceForEvents, 'close'), closeDialog);
 
 
-                $rootScope.$on('historyBack', function (e, oldLocation) {
-                    utils.emit('close', function () {
-                        $location.path(oldLocation);
-                    }).forThe(dialogManager.getUpperDialog(), namespaceForEvents);
-                });
+                //$rootScope.$on('historyBack', function (e, oldLocation) {
+                //    utils.emit('close', function () {
+                //        $location.path(oldLocation);
+                //    }).forThe(dialogManager.getUpperDialog(), namespaceForEvents);
+                //});
 
                 $document.bind('keydown keypress', function (event) {
                     var upperDialog = dialogManager.getUpperDialog();
@@ -282,16 +281,20 @@ mod.provider('dialogManager', function () {
 
         var configData = _getDialogConfigData(initialData);
 
-        if (initialData.dynamicParams) {
+        if (initialData.dynamicParams) { // for legacy reasons
             configData.dynamicParams = initialData.dynamicParams;
         }
 
-        Object.keys(configData).forEach(function (prop) {
+        if (initialData.scope) {
+            configData.scope = initialData.scope;
+        }
+
+        Object.keys(configData).forEach(function (prop) { // for legacy reasons
             delete initialData[prop];
         });
 
         angular.extend(this, configData);
-        this.data = initialData;
+        this.data = initialData;  // for legacy reasons
     };
 
     return {
