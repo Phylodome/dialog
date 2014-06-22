@@ -30,6 +30,10 @@ mod.provider('dialogManager', function () {
 
         var configData = _getConfigData(initialData);
 
+        if (initialData.dynamicParams) {
+            configData.dynamicParams = initialData.dynamicParams;
+        }
+
         Object.keys(configData).forEach(function (prop) {
             delete initialData[prop];
         });

@@ -37,6 +37,10 @@ mod.provider('dialogManager', function () {
 
         var configData = _getConfigData(initialData);
 
+        if (initialData.dynamicParams) {
+            configData.dynamicParams = initialData.dynamicParams;
+        }
+
         Object.keys(configData).forEach(function (prop) {
             delete initialData[prop];
         });
@@ -104,71 +108,70 @@ mod.provider('dialogManager', function () {
 });
 
 // Source: src/directives/dialogDirective.js
+var docBody = document.body;
+var docElem = document.documentElement;
+
+var getTopScroll = function () {
+    return docBody.scrollTop || docElem.scrollTop;
+};
+
+var getViewportSize = (function (viewportStyle) {
+    if (viewportStyle.isW3C) {
+        return function () {
+            return {
+                width: window.innerWidth,
+                height: window.innerHeight
+            };
+        };
+    } else if (viewportStyle.isIE) {
+        return function () {
+            return {
+                width: docElem.clientWidth,
+                height: docElem.clientHeight
+            };
+        };
+    }
+    return function () {
+        return {
+            width: docBody.clientWidth,
+            height: docBody.clientHeight
+        };
+    };
+}({
+    /* jshint -W041 */
+    isW3C: (typeof window.innerWidth != 'undefined'),
+
+    /* jshint -W041 */
+    isIE: (typeof docElem != 'undefined' &&
+        typeof docElem.clientWidth != 'undefined' &&
+        docElem.clientWidth != 0)
+}));
+
+var getTopOffset = function (cfgTopOffset) {
+    /* jshint -W041 */
+    var parsed = cfgTopOffset != null ? parseInt(cfgTopOffset, 10) : 20;
+    if (isNaN(parsed)) {
+        return getTopScroll() + 'px';
+    }
+    return (getTopScroll() + getViewportSize().height * (parsed / 100)) + 'px';
+};
+
 mod.directive('dialog', [
     '$rootScope',
     '$timeout',
     'dialogManager',
     function ($rootScope, $timeout, dialogManager) {
 
-        var docBody = document.body;
-
-        var docElem = document.documentElement;
-
-        var viewportStyle = {
-            /* jshint -W041 */
-            isW3C: (typeof window.innerWidth != 'undefined'),
-
-            isIE: (typeof docElem != 'undefined' &&
-                typeof docElem.clientWidth != 'undefined' &&
-                docElem.clientWidth != 0)
-        };
-
-        var getTopScroll = function () {
-            return docBody.scrollTop || docElem.scrollTop;
-        };
-
-        var getViewportSize = function () {
-
-            var ohIsIt = [viewportStyle.isW3C, viewportStyle.isIE, true];
-
-            var yesItIS = [
-                {
-                    width: window.innerWidth,
-                    height: window.innerHeight
-                },
-                {
-                    width: docElem.clientWidth,
-                    height: docElem.clientHeight
-                },
-                {
-                    width: docBody.clientWidth,
-                    height: docBody.clientHeight
-                }
-            ];
-
-            return yesItIS[ohIsIt.indexOf(true)];
-        };
-
-        var getTopOffset = function (cfgTopOffset) {
-            var parsed = cfgTopOffset != null ? parseInt(cfgTopOffset, 10) : 20;
-            return {
-                'true': (getTopScroll() + getViewportSize().height * (parsed / 100)) + 'px', // null, undefined, number..
-                'false': getTopScroll() + 'px' // false, true, string, array, object...
-            }[!isNaN(parsed)];
-        };
-
-
-        var link = function (scope, element, attrs, ctrl) {
+        var link = function (scope, element, attrs) {
 
             var dialog = dialogManager.dialogs[attrs.dialog];
 
-            if (ctrl != null) {
-                ctrl.data = ctrl.data || {};
-                angular.extend(ctrl.data, dialog.data);
-            } else {
-                scope.data = scope.data || {};
-                angular.extend(scope.data, dialog.data);
-            }
+            scope.data = scope.data || {};
+            angular.extend(scope.data, dialog.data);
+
+            dialog.hasOwnProperty('dynamicParams') && angular.extend(scope, {
+                params: dialog.dynamicParams
+            });
 
             var dynamicCSS = {
                 zIndex: dialogManager.cfg.baseZindex + (dialog.label + 1) * 2,
