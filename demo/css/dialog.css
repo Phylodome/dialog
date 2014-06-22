@@ -1,0 +1,65 @@
+body {
+    position: relative;
+}
+
+.dialog-mask {
+    background-color: #515a5d;
+    bottom: 0;
+    left: 0;
+    position: fixed;
+    right: 0;
+    top: 0;
+}
+
+.dialog-mask.show {
+    opacity: .9;
+}
+
+.dialog-itself {
+    background-color: #fff;
+    border-radius: 4px;
+    box-shadow: 0 0 7px 2px rgba(0, 0, 0, .3);
+    left: 50%;
+    padding: 25px;
+    position: absolute;
+}
+
+.dialog-itself.show {
+    opacity: 1;
+}
+
+.dialog-itself header {
+    padding-bottom: 30px;
+}
+
+.dialog-itself footer {
+    padding-top: 30px;
+}
+
+.dialog-mask,
+.dialog-itself {
+    opacity: 0;
+    transition: opacity .5s ease;
+    z-index: -1;
+}
+
+.dialog-root .dialog-mask,
+.dialog-root .dialog-itself {
+    display: block;
+    z-index: 3000;
+}
+
+.dialog-mask.hide,
+.dialog-itself.hide {
+    transition: opacity .5s ease, z-index 0 linear .6s;
+}
+
+.dialog-800 {
+    margin-left: -400px;
+    width: 800px;
+}
+
+.dialog-440 {
+    margin-left: -220px;
+    width: 390px;
+}

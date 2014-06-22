@@ -1,11 +1,22 @@
 <!DOCTYPE html>
-<html ng-app>
-<head>
-    <title>dialog demo</title>
-    <script src="vendor/angular/angular.js"></script>
-    <script src="vendor/tri-angular/tri-angular-dialog.js"></script>
-</head>
-<body>
-    ..
-</body>
+<html ng-app="demoApp">
+    <head>
+        <title>dialog demo</title>
+        <link href="css/dialog.css" rel="stylesheet" />
+    </head>
+    <body dialog-root>
+        <header>
+            <h1>AngularJS - triAngular - dialog</h1>
+        </header>
+        <ul ng-controller="DialogTriggersList">
+            <li><button ng-click="dialog440()">Trigger 440px wide dialog</button></li>
+            <li><button ng-click="dialog800()">Trigger 800px wide dialog</button></li>
+        </ul>
+        <footer>
+            <small>(d)WTF License</small>
+        </footer>
+        <script src="vendor/angular/angular.js"></script>
+        <script src="vendor/tri-angular/tri-angular-dialog.js"></script>
+        <script src="js/app.js"></script>
+    </body>
 </html>

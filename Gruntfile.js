@@ -70,8 +70,8 @@ module.exports = function(grunt) {
                 },
                 files: {
                     'tmp/tri-angular-dialog.js': [
-                        'src/services/*.js',
-                        'src/directives/*.js'
+                        'src/directives/*.js',
+                        'src/services/*.js'
                     ]
                 }
             }

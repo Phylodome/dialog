@@ -46,7 +46,7 @@ mod.provider('dialogManager', function () {
 
         DialogData: DialogData,
 
-        configure: function (cfg) {
+        config: function (cfg) {
             angular.extend(_config, cfg);
             return this;
         },

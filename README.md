@@ -1,17 +1,17 @@
 triAngular Dialog
-==============
+=================
 
 AngularJS multi modal dialog module
 
 Can be triggered from JavaScript:
---------------
+---------------------------------
 
 ```javascript
 dialogManager.triggerDialog(someDialogData);
 ```
 
-Sample config:
--------------
+Sample dialog config:
+---------------------
 
 ```javascript
 someDialogData = {
@@ -24,6 +24,24 @@ someDialogData = {
 }
 ```
 
-Other properties are appended to 'data' object in dialog's controller if controller is defined or to $scope if not,
-so you can pass any callbacks or models. Also dialog's $scope has 'closeClick' method.
+Other properties are appended to 'data' object in $scope, so you can pass any callbacks or models.
+Also dialog's $scope has 'closeClick' method.
 
+The Dialog Module can be configured globally
+--------------------------------------------
+
+```
+app.config(['dialogManagerProvider', function (dialogManagerProvider) {
+
+    dialogManagerProvider.config({
+         baseZindex: 3000, // minimum z-index for mask
+         rootClass: 'dialog-root', // class base for dialog-root tag (when inner dialogs are active)
+         maskClass: 'dialog-mask', // class for mask
+         dialogClass: 'dialog', // class for dialog itself
+         // those one will be removed/replaced when dialog will use angular $animate service
+         showClass: 'show', // class added to dialog and mask 100ms after dialog is appended inside dialog-root
+         hideClass: 'hide' // class added to dialog and mask 600ms before dialog is removed inside dialog-root
+     });
+
+}]);
+```
