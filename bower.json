@@ -1,0 +1,10 @@
+{
+  "name": "tri-angular-dialog",
+  "version": "0.0.1",
+  "devDependencies": {
+    "angular": "1.2.18"
+  },
+  "exportsOverride": {
+    "angular": {"./": ["*.js", "*.map"]}
+  }
+}
