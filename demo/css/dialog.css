@@ -11,10 +11,6 @@ body {
     top: 0;
 }
 
-.dialog-mask.show {
-    opacity: .9;
-}
-
 .dialog-itself {
     background-color: #fff;
     border-radius: 4px;
@@ -24,9 +20,42 @@ body {
     position: absolute;
 }
 
-.dialog-itself.show {
+.dialog-mask,
+.dialog-itself {
+    transition: opacity .5s ease;
+}
+
+.dialog-itself.ng-leave.ng-leave-active,
+.dialog-itself.ng-enter {
+    opacity: 0;
+}
+
+.dialog-itself.ng-leave,
+.dialog-itself.ng-enter.ng-enter-active {
     opacity: 1;
 }
+
+.dialog-mask {
+    opacity: 0;
+    z-index: -1;
+}
+
+.dialog-mask.show {
+    opacity: .9;
+}
+
+/*.dialog-root .dialog-itself*/
+.dialog-root .dialog-mask{
+    display: block;
+    z-index: 3000;
+}
+
+/*.dialog-itself.hide*/
+.dialog-mask.hide {
+    transition: opacity .5s ease, z-index 0 linear .6s;
+}
+
+
 
 .dialog-itself header {
     padding-bottom: 30px;
@@ -34,24 +63,6 @@ body {
 
 .dialog-itself footer {
     padding-top: 30px;
-}
-
-.dialog-mask,
-.dialog-itself {
-    opacity: 0;
-    transition: opacity .5s ease;
-    z-index: -1;
-}
-
-.dialog-root .dialog-mask,
-.dialog-root .dialog-itself {
-    display: block;
-    z-index: 3000;
-}
-
-.dialog-mask.hide,
-.dialog-itself.hide {
-    transition: opacity .5s ease, z-index 0 linear .6s;
 }
 
 .dialog-800 {

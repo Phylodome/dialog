@@ -5,8 +5,9 @@ mod.directive('dialogRoot', [
     '$rootScope',
     '$interpolate',
     '$document',
+    '$animate',
     'dialogManager',
-    function ($compile, $location, $rootScope, $interpolate, $document, dialogManager) {
+    function ($compile, $location, $rootScope, $interpolate, $document, $animate, dialogManager) {
 
         var utils = {
             getElem: function (dialog) {
@@ -18,7 +19,10 @@ mod.directive('dialogRoot', [
                             '<div ng-include="\'{{ templateUrl  }}\'" />' +
                          '</section>'
                     )(dialog)
-                );
+                )
+                .addClass(dialogManager.cfg.dialogClass)
+                .addClass(dialog.dialogClass)
+                .addClass(dialogManager.cfg.showClass);
             },
 
             updateMask: function (mask, space) { // TODO: mask should be moved to own directive...
@@ -90,9 +94,11 @@ mod.directive('dialogRoot', [
                     dialogManager.cfg.rootClass;
 
                 var openDialog = function (e, dialog) {
-                    element
-                        .addClass(rootClass)
-                        .append($compile(utils.getElem(dialog))(scope));
+                    element.addClass(rootClass);
+//                        .append($compile(utils.getElem(dialog))(scope));
+
+                    $animate.enter($compile(utils.getElem(dialog))(scope), element, tMask);
+
                     (!$rootScope.$$phase) && $rootScope.$digest();
                     utils.updateMask(tMask, namespaceForEvents);
                 };

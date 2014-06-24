@@ -51,8 +51,9 @@ var getTopOffset = function (cfgTopOffset) {
 mod.directive('dialog', [
     '$rootScope',
     '$timeout',
+    '$animate',
     'dialogManager',
-    function ($rootScope, $timeout, dialogManager) {
+    function ($rootScope, $timeout, $animate, dialogManager) {
 
         var link = function (scope, element, attrs) {
 
@@ -70,17 +71,7 @@ mod.directive('dialog', [
                 top: getTopOffset(dialog.topOffset)
             };
 
-            element
-                .css(dynamicCSS)
-                .addClass(dialogManager.cfg.dialogClass)
-                .addClass(dialogManager.cfg.hideClass)
-                .addClass(dialog.dialogClass);
-
-            $timeout(function () {
-                element
-                    .removeClass(dialogManager.cfg.hideClass)
-                    .addClass(dialogManager.cfg.showClass);
-            }, 100);
+            element.css(dynamicCSS);
 
             scope.closeClick = function () {
                 $rootScope.$emit(dialog.namespace + '.dialog.close', dialog);
@@ -88,15 +79,20 @@ mod.directive('dialog', [
 
             $rootScope.$on(dialog.namespace + '.dialog.close', function (e, closedDialog) {
                 if (closedDialog.label == dialog.label) {
-                    $timeout(function () {
-                        element
-                            .removeClass(dialogManager.cfg.showClass)
-                            .addClass(dialogManager.cfg.hideClass)
-                            .css({zIndex: -1});
-                        $timeout(function () {
-                            element.remove();
-                        }, 600);
-                    }, 0);
+                    scope.$destroy();
+                    $animate.leave(element);
+
+
+
+//                    $timeout(function () {
+//                        element
+//                            .removeClass(dialogManager.cfg.showClass)
+//                            .addClass(dialogManager.cfg.hideClass)
+//                            .css({zIndex: -1});
+//                        $timeout(function () {
+//                            element.remove();
+//                        }, 600);
+//                    }, 0);
                 }
             });
 

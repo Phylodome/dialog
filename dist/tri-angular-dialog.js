@@ -57,8 +57,9 @@ var getTopOffset = function (cfgTopOffset) {
 mod.directive('dialog', [
     '$rootScope',
     '$timeout',
+    '$animate',
     'dialogManager',
-    function ($rootScope, $timeout, dialogManager) {
+    function ($rootScope, $timeout, $animate, dialogManager) {
 
         var link = function (scope, element, attrs) {
 
@@ -76,17 +77,7 @@ mod.directive('dialog', [
                 top: getTopOffset(dialog.topOffset)
             };
 
-            element
-                .css(dynamicCSS)
-                .addClass(dialogManager.cfg.dialogClass)
-                .addClass(dialogManager.cfg.hideClass)
-                .addClass(dialog.dialogClass);
-
-            $timeout(function () {
-                element
-                    .removeClass(dialogManager.cfg.hideClass)
-                    .addClass(dialogManager.cfg.showClass);
-            }, 100);
+            element.css(dynamicCSS);
 
             scope.closeClick = function () {
                 $rootScope.$emit(dialog.namespace + '.dialog.close', dialog);
@@ -94,15 +85,20 @@ mod.directive('dialog', [
 
             $rootScope.$on(dialog.namespace + '.dialog.close', function (e, closedDialog) {
                 if (closedDialog.label == dialog.label) {
-                    $timeout(function () {
-                        element
-                            .removeClass(dialogManager.cfg.showClass)
-                            .addClass(dialogManager.cfg.hideClass)
-                            .css({zIndex: -1});
-                        $timeout(function () {
-                            element.remove();
-                        }, 600);
-                    }, 0);
+                    scope.$destroy();
+                    $animate.leave(element);
+
+
+
+//                    $timeout(function () {
+//                        element
+//                            .removeClass(dialogManager.cfg.showClass)
+//                            .addClass(dialogManager.cfg.hideClass)
+//                            .css({zIndex: -1});
+//                        $timeout(function () {
+//                            element.remove();
+//                        }, 600);
+//                    }, 0);
                 }
             });
 
@@ -124,8 +120,9 @@ mod.directive('dialogRoot', [
     '$rootScope',
     '$interpolate',
     '$document',
+    '$animate',
     'dialogManager',
-    function ($compile, $location, $rootScope, $interpolate, $document, dialogManager) {
+    function ($compile, $location, $rootScope, $interpolate, $document, $animate, dialogManager) {
 
         var utils = {
             getElem: function (dialog) {
@@ -137,7 +134,10 @@ mod.directive('dialogRoot', [
                             '<div ng-include="\'{{ templateUrl  }}\'" />' +
                          '</section>'
                     )(dialog)
-                );
+                )
+                .addClass(dialogManager.cfg.dialogClass)
+                .addClass(dialog.dialogClass)
+                .addClass(dialogManager.cfg.showClass);
             },
 
             updateMask: function (mask, space) { // TODO: mask should be moved to own directive...
@@ -209,9 +209,11 @@ mod.directive('dialogRoot', [
                     dialogManager.cfg.rootClass;
 
                 var openDialog = function (e, dialog) {
-                    element
-                        .addClass(rootClass)
-                        .append($compile(utils.getElem(dialog))(scope));
+                    element.addClass(rootClass);
+//                        .append($compile(utils.getElem(dialog))(scope));
+
+                    $animate.enter($compile(utils.getElem(dialog))(scope), element, tMask);
+
                     (!$rootScope.$$phase) && $rootScope.$digest();
                     utils.updateMask(tMask, namespaceForEvents);
                 };
@@ -360,4 +362,4 @@ mod.provider('dialogManager', function () {
     };
 });
 
-})(angular.module('triNgDialog', []));
+})(angular.module('triNgDialog', ['ng', 'ngAnimate']));
