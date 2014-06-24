@@ -1,6 +1,16 @@
 {
   "name": "tri-angular-dialog",
-  "version": "0.0.3",
+  "version": "0.1.0",
+  "main": [
+    "dist/*.js",
+    "dist/*.map"
+  ],
+  "ignore": [
+    "demo/",
+    "Gruntfile.js",
+    "CONTRIBUTING.md",
+    ".gitignore"
+  ],
   "dependencies": {
     "angular": "1.2.18",
     "angular-animate": "1.2.18"
