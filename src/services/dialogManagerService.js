@@ -6,6 +6,7 @@ mod.provider('dialogManager', function () {
         rootClass: 'dialog-root',
         maskClass: 'dialog-mask',
         dialogClass: 'dialog',
+        mainNamespace: 'main',
         showClass: 'show',
         hideClass: 'hide'
     };
@@ -16,7 +17,7 @@ mod.provider('dialogManager', function () {
             dialogClass: initialData.dialogClass || '',
             topOffset: initialData.topOffset,
             modal: initialData.modal || false,
-            namespace: initialData.namespace || 'main',
+            namespace: initialData.namespace || _config.mainNamespace,
             templateUrl: initialData.templateUrl
         };
     };
@@ -55,7 +56,7 @@ mod.provider('dialogManager', function () {
             return this;
         },
 
-        $get: ['$rootScope', function ($rootScope) {
+        $get: ['$rootScope', function ($root) {
 
             var DialogManager = function DialogManager() {
                 return angular.extend(this, {
@@ -85,7 +86,6 @@ mod.provider('dialogManager', function () {
                 unregisterDialog: function (label) {
                     var dialog = this.dialogs[label];
                     if (dialog && dialog.label === label) {
-                        delete dialog.label;
                         this.dialogs.splice(label, 1);
                         return true;
                     }
@@ -94,8 +94,8 @@ mod.provider('dialogManager', function () {
 
                 triggerDialog: function (data) {
                     data = data || {};
-                    $rootScope.$emit(
-                        (data.namespace ? data.namespace + '.' : 'main.') + 'dialog.open',
+                    $root.$emit(
+                        (data.namespace || this.cfg.mainNamespace) + '.dialog.open',
                         this.registerDialog(
                             new DialogData(data)
                         )

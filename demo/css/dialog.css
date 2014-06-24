@@ -2,10 +2,16 @@ body {
     position: relative;
 }
 
+/*
+ * base
+ */
+
 .dialog-mask {
     background-color: #515a5d;
     bottom: 0;
+    display: none;
     left: 0;
+    opacity: 0;
     position: fixed;
     right: 0;
     top: 0;
@@ -25,8 +31,13 @@ body {
     transition: opacity .5s ease;
 }
 
+/*
+ * ng animations
+ */
+.dialog-itself.ng-enter,
 .dialog-itself.ng-leave.ng-leave-active,
-.dialog-itself.ng-enter {
+.dialog-mask.show-add,
+.dialog-mask.show-remove.show-remove-active {
     opacity: 0;
 }
 
@@ -35,28 +46,21 @@ body {
     opacity: 1;
 }
 
-.dialog-mask {
-    opacity: 0;
-    z-index: -1;
-}
-
-.dialog-mask.show {
+.dialog-mask.show,
+.dialog-mask.show-remove,
+.dialog-mask.show-add.show-add-active {
     opacity: .9;
 }
 
-/*.dialog-root .dialog-itself*/
-.dialog-root .dialog-mask{
+.dialog-mask.show,
+.dialog-mask.show-add,
+.dialog-mask.show-remove {
     display: block;
-    z-index: 3000;
 }
 
-/*.dialog-itself.hide*/
-.dialog-mask.hide {
-    transition: opacity .5s ease, z-index 0 linear .6s;
-}
-
-
-
+/*
+ * single dialog styles
+ */
 .dialog-itself header {
     padding-bottom: 30px;
 }

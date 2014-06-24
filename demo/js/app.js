@@ -31,6 +31,8 @@
                 dialogManager.triggerDialog({
                     templateUrl: 'partials/dialog.html',
                     dialogClass: 'dialog-800',
+                    topOffset: 0,
+                    modal: true,
                     anotherDialog: function () {
                         $scope.dialog440();
                     }

@@ -1,4 +1,5 @@
 'use strict';
+
 mod.directive('dialogRoot', [
     '$compile',
     '$location',
@@ -9,129 +10,166 @@ mod.directive('dialogRoot', [
     'dialogManager',
     function ($compile, $location, $rootScope, $interpolate, $document, $animate, dialogManager) {
 
+        var docBody = document.body;
+        var docElem = document.documentElement;
+
         var utils = {
+
+            getViewportSize: (function (viewportStyle) {
+                if (viewportStyle.isW3C) {
+                    return function () {
+                        return {
+                            width: window.innerWidth,
+                            height: window.innerHeight
+                        };
+                    };
+                } else if (viewportStyle.isIE) {
+                    return function () {
+                        return {
+                            width: docElem.clientWidth,
+                            height: docElem.clientHeight
+                        };
+                    };
+                }
+                return function () {
+                    return {
+                        width: docBody.clientWidth,
+                        height: docBody.clientHeight
+                    };
+                };
+            }({
+                /* jshint -W041 */
+                isW3C: (typeof window.innerWidth != 'undefined'),
+
+                /* jshint -W041 */
+                isIE: (typeof docElem != 'undefined' &&
+                    typeof docElem.clientWidth != 'undefined' &&
+                    docElem.clientWidth != 0)
+            })),
+
+            getTopScroll: function () {
+                return docBody.scrollTop || docElem.scrollTop;
+            },
+
+            getTopOffset: function (percentTopOffset) {
+                /* jshint -W041 */
+                var parsed = percentTopOffset != null ? parseInt(percentTopOffset, 10) : 20;
+                if (isNaN(parsed)) {
+                    return this.getTopScroll() + 'px';
+                }
+                return (this.getTopScroll() + this.getViewportSize().height * (parsed / 100)) + 'px';
+            },
+
             getElem: function (dialog) {
-                return angular.element(
-                    $interpolate(
+                return angular
+                    .element($interpolate(
                         '<section dialog="{{ label }}"' +
                             (dialog.controller ? ' ng-controller="{{ controller }} as ctrl"' :  '') +
                         '>' +
                             '<div ng-include="\'{{ templateUrl  }}\'" />' +
                          '</section>'
-                    )(dialog)
-                )
-                .addClass(dialogManager.cfg.dialogClass)
-                .addClass(dialog.dialogClass)
-                .addClass(dialogManager.cfg.showClass);
+                    )(dialog))
+                    .addClass(dialogManager.cfg.dialogClass + ' ' + dialog.dialogClass)
+                    .css({
+                        zIndex: dialogManager.cfg.baseZindex + (dialog.label + 1) * 2,
+                        top: this.getTopOffset(dialog.topOffset)
+                    });
             },
 
             updateMask: function (mask, space) { // TODO: mask should be moved to own directive...
-                var updates = {
-                    css: {
-                        'true': dialogManager.cfg.baseZindex + dialogManager.dialogs.length * 2 - 1,
-                        'false': -1
-                    },
-                    cls: {
-                        'true': dialogManager.cfg.showClass,
-                        'false': dialogManager.cfg.hideClass
-                    }
-                };
-                var update = function (cond) {
-                    mask.css('z-index', updates.css[cond]);
-                    mask.removeClass(updates.cls[!cond]).addClass(updates.cls[cond]);
-                };
-                update(dialogManager.hasAny(space));
+                if (dialogManager.hasAny(space)) {
+                    mask.css('z-index', dialogManager.cfg.baseZindex + dialogManager.dialogs.length * 2 - 1);
+                    $animate.addClass(mask, dialogManager.cfg.showClass);
+                } else {
+                    $animate.removeClass(mask, dialogManager.cfg.showClass, function () {
+                        mask.removeAttr('style');
+                    });
+                }
             },
 
             eventLabel: function (typeAttrValue, eventType) {
                 return typeAttrValue + '.dialog.' + eventType;
             },
 
-            emit: function (type, fn) {
-                var self = this;
-                return {
-                    'forThe': function (dialog, label, checkModal) {
-                        var conds = {
-                            'true': !dialog.modal,
-                            'false': true,
-                            'close': !!dialogManager.dialogs.length,
-                            'open': true
-                        };
-                        if (!!dialog && conds[type] && conds[!!checkModal]) {
-                            angular.isFunction(fn) && fn();
-                            $rootScope.$emit(self.eventLabel(label, type), dialog);
-                        }
-                    }
-                };
-            },
-
-            maskBasicClass: function (rootLabel, basicClass) {
-                return rootLabel ? rootLabel + '-' + basicClass : basicClass;
+            extendClass: function (namespace, basicClass) {
+                return namespace ? namespace + '-' + basicClass : basicClass;
             }
         };
 
         var compile = function (tElement, tAttrs) {
             var tMask = angular.element('<div />');
-            var namespaceForEvents = tAttrs.dialogRoot || 'main';
+            var namespaceForEvents = tAttrs.dialogRoot || dialogManager.cfg.mainNamespace;
 
             tElement.append(tMask);
-
             tMask.addClass(
-                utils.maskBasicClass(
-                    tAttrs.dialogRoot,
-                    dialogManager.cfg.maskClass
-                )
+                utils.extendClass(tAttrs.dialogRoot, dialogManager.cfg.maskClass)
             );
 
             tMask.bind('click', function () {
-                utils.emit('close').forThe(dialogManager.getUpperDialog(), namespaceForEvents, true);
+                var upperDialog = dialogManager.getUpperDialog();
+                if (!upperDialog.modal) {
+                    $rootScope.$emit(utils.eventLabel(namespaceForEvents, 'close'), upperDialog);
+                    $rootScope.$digest();
+                }
             });
 
             return function (scope, element, attrs) {
 
-                var rootClass = attrs.dialogRoot ?
-                    attrs.dialogRoot + '-' + dialogManager.cfg.rootClass :
-                    dialogManager.cfg.rootClass;
+                var rootClass = utils.extendClass(attrs.dialogRoot, dialogManager.cfg.rootClass);
 
                 var openDialog = function (e, dialog) {
                     element.addClass(rootClass);
-//                        .append($compile(utils.getElem(dialog))(scope));
 
-                    $animate.enter($compile(utils.getElem(dialog))(scope), element, tMask);
+                    $animate.enter(
+                        $compile(utils.getElem(dialog))(scope),
+                        element,
+                        tMask
+                    );
 
-                    (!$rootScope.$$phase) && $rootScope.$digest();
+                    (!$rootScope.$$phase) && $rootScope.$digest(); // because user can trigger dialog inside $apply
+
                     utils.updateMask(tMask, namespaceForEvents);
                 };
 
                 var closeDialog = function (e, dialog) {
                     dialogManager.unregisterDialog(dialog.label);
                     !dialogManager.hasAny(namespaceForEvents) && element.removeClass(rootClass);
+
                     utils.updateMask(tMask, namespaceForEvents);
                 };
 
                 $rootScope.$on(utils.eventLabel(namespaceForEvents, 'open'), openDialog);
                 $rootScope.$on(utils.eventLabel(namespaceForEvents, 'close'), closeDialog);
-
-
-                //$rootScope.$on('historyBack', function (e, oldLocation) {
-                //    utils.emit('close', function () {
-                //        $location.path(oldLocation);
-                //    }).forThe(dialogManager.getUpperDialog(), namespaceForEvents);
-                //});
-
-                $document.bind('keydown keypress', function (event) {
-                    var upperDialog = dialogManager.getUpperDialog();
-                    if (event.which === 27 && upperDialog && upperDialog.namespace === namespaceForEvents) {
-                        utils.emit('close').forThe(upperDialog, namespaceForEvents);
-                    }
-                });
-
             };
         };
 
         return {
             restrict: 'A',
             compile: compile
+        };
+    }
+]);
+
+mod.directive('body', [
+    '$rootScope',
+    '$document',
+    'dialogManager',
+    function ($root, $document, dialogManager) {
+        var link = function postLink() {
+            $document.on('keydown keypress', function (event) {
+                var upperDialog = dialogManager.getUpperDialog();
+                if (event.which === 27 && upperDialog) {
+                    $root.$emit(
+                        (upperDialog.namespace || dialogManager.cfg.mainNamespace) + '.dialog.close',
+                        upperDialog
+                    );
+                    $root.$digest();
+                }
+            });
+        };
+        return {
+            restrict: 'E',
+            link: link
         };
     }
 ]);
