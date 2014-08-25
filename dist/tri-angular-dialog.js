@@ -11,27 +11,27 @@ mod.directive('dialog', [
     '$http',
     '$animate',
     '$compile',
+    '$controller',
     '$templateCache',
     'dialogManager',
-    function ($root, $http, $animate, $compile, $templateCache, dialogManager) {
+    function ($root, $http, $animate, $compile, $controller, $templateCache, dialogManager) {
 
         var link = function (scope, element, attrs) {
 
             var dialog = dialogManager.dialogs[attrs.dialog];
+            var locals = {
+                $data: dialog.data,
+                $scope: scope
+            };
 
-            /*
-             * LEGACY
-             */
-            scope.data = scope.data || {};
-            angular.extend(scope.data, dialog.data);
-            dialog.hasOwnProperty('dynamicParams') && angular.extend(scope, {
-                params: dialog.dynamicParams
-            });
-            /*
-             * END LEGACY
-             */
-
-            angular.isObject(dialog.scope) && angular.extend(scope, dialog.scope);
+            var init = function (innerLink) {
+                if (dialog.controller) {
+                    scope.dialogCtrl = $controller(dialog.controller, locals);
+                    element.data('$ngControllerController', scope.dialogCtrl);
+                    element.children().data('$ngControllerController', scope.dialogCtrl);
+                }
+                innerLink(scope);
+            };
 
             $http
                 .get(dialog.templateUrl, {
@@ -39,7 +39,7 @@ mod.directive('dialog', [
                 })
                 .success(function (response) {
                     element.html(response);
-                    $compile(element.contents())(scope);
+                    init($compile(element.contents()));
                     scope.$emit('$triNgDialogTemplateLoaded');
                 })
                 .error(function () {
@@ -133,9 +133,7 @@ mod.directive('dialogRoot', [
             getElem: function (dialog) {
                 return angular
                     .element($interpolate(
-                        '<section dialog="{{ label }}"' +
-                            (dialog.controller ? ' ng-controller="{{ controller }} as ctrl"' :  '') +
-                        '></section>'
+                        '<section dialog="{{ label }}"></section>'
                     )(dialog))
                     .addClass(dialogManager.cfg.dialogClass + ' ' + dialog.dialogClass)
                     .css({
@@ -200,7 +198,7 @@ mod.directive('dialogRoot', [
                 };
 
                 var closeDialog = function (e, dialog) {
-                    dialogManager.unregisterDialog(dialog.label);
+                    dialogManager.unRegisterDialog(dialog.label);
                     !dialogManager.hasAny(namespaceForEvents) && element.removeClass(rootClass);
 
                     utils.updateMask(tMask, namespaceForEvents);
@@ -255,18 +253,6 @@ mod.provider('dialogManager', function () {
         hideClass: 'hide'
     };
 
-    var _getDialogConfigData = function (initialData) {
-        return {
-            controller: initialData.controller || false,
-            dialogClass: initialData.dialogClass || '',
-            topOffset: initialData.topOffset,
-            modal: initialData.modal || false,
-            namespace: initialData.namespace || _config.mainNamespace,
-            templateUrl: initialData.templateUrl
-        };
-    };
-
-
     var DialogManagerService = function ($root, $log) {
 
         var DialogManager = function DialogManager() {
@@ -276,46 +262,35 @@ mod.provider('dialogManager', function () {
             });
         };
 
-        var DialogData = function (initialData) {
-
-            var configData;
-
-            if (!initialData.templateUrl) {
+        var DialogData = function (config, data) {
+            if (!config.templateUrl) {
                 // TODO: remove and add default template
                 $log.error(new Error('triNgDialog.DialogData() - initialData must contain defined "templateUrl"'));
             }
-
-            configData = _getDialogConfigData(initialData); // TODO: when dropping legacy, config and initial data will be one
-
-            if (initialData.scope) {
-                configData.scope = initialData.scope;
-            }
-
-            /*
-             * LEGACY
-             */
-            if (initialData.dynamicParams) {
-                configData.dynamicParams = initialData.dynamicParams;
-            }
-            Object.keys(configData).forEach(function (prop) {
-                delete initialData[prop];
-            });
-            /*
-             * END LEGACY
-             */
-
-
-            return angular.extend(this, configData, {
-                data: initialData // for legacy reasons
-            });
+            return this._updateDialogConfigData(config, data);
         };
+
+        angular.extend(DialogData.prototype, {
+            _updateDialogConfigData: function (config, data) {
+                return angular.extend(this, {
+                    controller: config.controller,
+                    controllerAs: config.controllerAs,
+                    dialogClass: config.dialogClass || '',
+                    topOffset: config.topOffset,
+                    modal: config.modal || false,
+                    namespace: config.namespace || _config.mainNamespace,
+                    templateUrl: config.templateUrl,
+                    data: data
+                });
+            }
+        });
 
         angular.extend(DialogManager.prototype, {
 
             hasAny: function (namespace) {
-                return this.dialogs.filter(function (dialog) {
+                return this.dialogs.some(function (dialog) {
                     return dialog.namespace === namespace;
-                }).length > 0;
+                });
             },
 
             getUpperDialog: function () {
@@ -328,7 +303,7 @@ mod.provider('dialogManager', function () {
                 return dialog;
             },
 
-            unregisterDialog: function (label) {
+            unRegisterDialog: function (label) {
                 var dialog = this.dialogs[label];
                 if (dialog && dialog.label === label) {
                     this.dialogs.splice(label, 1);
@@ -337,13 +312,11 @@ mod.provider('dialogManager', function () {
                 return false;
             },
 
-            triggerDialog: function (data) {
-                data = data || {};
+            triggerDialog: function (config, data) {
+                config = config || {};
                 $root.$emit(
-                        (data.namespace || this.cfg.mainNamespace) + '.dialog.open',
-                    this.registerDialog(
-                        new DialogData(data)
-                    )
+                    (config.namespace || this.cfg.mainNamespace) + '.dialog.open',
+                    this.registerDialog(new DialogData(config, data))
                 );
                 return this;
             }

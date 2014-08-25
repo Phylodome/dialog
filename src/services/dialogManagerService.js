@@ -11,17 +11,6 @@ mod.provider('dialogManager', function () {
         hideClass: 'hide'
     };
 
-    var _getDialogConfigData = function (initialData) {
-        return {
-            controller: initialData.controller || false,
-            dialogClass: initialData.dialogClass || '',
-            topOffset: initialData.topOffset,
-            modal: initialData.modal || false,
-            namespace: initialData.namespace || _config.mainNamespace,
-            templateUrl: initialData.templateUrl
-        };
-    };
-
     var DialogManagerService = function ($root, $log) {
 
         var DialogManager = function DialogManager() {
@@ -31,45 +20,35 @@ mod.provider('dialogManager', function () {
             });
         };
 
-        var DialogData = function (initialData) {
-
-            var configData;
-
-            if (!initialData.templateUrl) {
+        var DialogData = function (config, data) {
+            if (!config.templateUrl) {
                 // TODO: remove and add default template
                 $log.error(new Error('triNgDialog.DialogData() - initialData must contain defined "templateUrl"'));
             }
-
-            configData = _getDialogConfigData(initialData); // TODO: when dropping legacy, config and initial data will be one
-
-            if (initialData.scope) {
-                configData.scope = initialData.scope;
-            }
-
-            /*
-             * LEGACY
-             */
-            if (initialData.dynamicParams) {
-                configData.dynamicParams = initialData.dynamicParams;
-            }
-            Object.keys(configData).forEach(function (prop) {
-                delete initialData[prop];
-            });
-            /*
-             * END LEGACY
-             */
-
-            return angular.extend(this, configData, {
-                data: initialData // for legacy reasons
-            });
+            return this._updateDialogConfigData(config, data);
         };
+
+        angular.extend(DialogData.prototype, {
+            _updateDialogConfigData: function (config, data) {
+                return angular.extend(this, {
+                    controller: config.controller,
+                    controllerAs: config.controllerAs,
+                    dialogClass: config.dialogClass || '',
+                    topOffset: config.topOffset,
+                    modal: config.modal || false,
+                    namespace: config.namespace || _config.mainNamespace,
+                    templateUrl: config.templateUrl,
+                    data: data
+                });
+            }
+        });
 
         angular.extend(DialogManager.prototype, {
 
             hasAny: function (namespace) {
-                return this.dialogs.filter(function (dialog) {
+                return this.dialogs.some(function (dialog) {
                     return dialog.namespace === namespace;
-                }).length > 0;
+                });
             },
 
             getUpperDialog: function () {
@@ -91,13 +70,11 @@ mod.provider('dialogManager', function () {
                 return false;
             },
 
-            triggerDialog: function (data) {
-                data = data || {};
+            triggerDialog: function (config, data) {
+                config = config || {};
                 $root.$emit(
-                        (data.namespace || this.cfg.mainNamespace) + '.dialog.open',
-                    this.registerDialog(
-                        new DialogData(data)
-                    )
+                    (config.namespace || this.cfg.mainNamespace) + '.dialog.open',
+                    this.registerDialog(new DialogData(config, data))
                 );
                 return this;
             }

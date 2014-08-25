@@ -63,9 +63,7 @@ mod.directive('dialogRoot', [
             getElem: function (dialog) {
                 return angular
                     .element($interpolate(
-                        '<section dialog="{{ label }}"' +
-                            (dialog.controller ? ' ng-controller="{{ controller }} as ctrl"' :  '') +
-                        '></section>'
+                        '<section dialog="{{ label }}"></section>'
                     )(dialog))
                     .addClass(dialogManager.cfg.dialogClass + ' ' + dialog.dialogClass)
                     .css({

@@ -14,7 +14,9 @@
 
     app.controller('DialogSimpleCtrl', [
         '$scope',
-        function ($scope) {
+        '$data',
+        function ($scope, $data) {
+            $scope.$data = $data;
             $scope.$on('$triNgDialogTemplateRequested', console.log.bind(console, '$triNgDialogTemplateRequested'));
             $scope.$on('$triNgDialogTemplateLoaded', console.log.bind(console, '$triNgDialogTemplateLoaded'));
             $scope.$on('$triNgDialogTemplateError', console.log.bind(console, '$triNgDialogTemplateError'));
@@ -30,7 +32,8 @@
                 dialogManager.triggerDialog({
                     controller: 'DialogSimpleCtrl',
                     templateUrl: 'partials/dialog.html',
-                    dialogClass: 'dialog-440',
+                    dialogClass: 'dialog-440'
+                }, {
                     anotherDialog: function () {
                         $scope.dialog800();
                     }
@@ -43,7 +46,8 @@
                     templateUrl: 'partials/dialog.html',
                     dialogClass: 'dialog-800',
                     topOffset: 0,
-                    modal: true,
+                    modal: true
+                }, {
                     anotherDialog: function () {
                         $scope.dialog440();
                     }

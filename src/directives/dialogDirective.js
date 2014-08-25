@@ -5,27 +5,27 @@ mod.directive('dialog', [
     '$http',
     '$animate',
     '$compile',
+    '$controller',
     '$templateCache',
     'dialogManager',
-    function ($root, $http, $animate, $compile, $templateCache, dialogManager) {
+    function ($root, $http, $animate, $compile, $controller, $templateCache, dialogManager) {
 
         var link = function (scope, element, attrs) {
 
             var dialog = dialogManager.dialogs[attrs.dialog];
+            var locals = {
+                $data: dialog.data,
+                $scope: scope
+            };
 
-            /*
-             * LEGACY
-             */
-            scope.data = scope.data || {};
-            angular.extend(scope.data, dialog.data);
-            dialog.hasOwnProperty('dynamicParams') && angular.extend(scope, {
-                params: dialog.dynamicParams
-            });
-            /*
-             * END LEGACY
-             */
-
-            angular.isObject(dialog.scope) && angular.extend(scope, dialog.scope);
+            var init = function (innerLink) {
+                if (dialog.controller) {
+                    scope.dialogCtrl = $controller(dialog.controller, locals);
+                    element.data('$ngControllerController', scope.dialogCtrl);
+                    element.children().data('$ngControllerController', scope.dialogCtrl);
+                }
+                innerLink(scope);
+            };
 
             $http
                 .get(dialog.templateUrl, {
@@ -33,7 +33,7 @@ mod.directive('dialog', [
                 })
                 .success(function (response) {
                     element.html(response);
-                    $compile(element.contents())(scope);
+                    init($compile(element.contents()));
                     scope.$emit('$triNgDialogTemplateLoaded');
                 })
                 .error(function () {
