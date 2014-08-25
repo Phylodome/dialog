@@ -8,9 +8,12 @@
 // Source: src/directives/dialogDirective.js
 mod.directive('dialog', [
     '$rootScope',
+    '$http',
     '$animate',
+    '$compile',
+    '$templateCache',
     'dialogManager',
-    function ($root, $animate, dialogManager) {
+    function ($root, $http, $animate, $compile, $templateCache, dialogManager) {
 
         var link = function (scope, element, attrs) {
 
@@ -30,6 +33,22 @@ mod.directive('dialog', [
 
             angular.isObject(dialog.scope) && angular.extend(scope, dialog.scope);
 
+            $http
+                .get(dialog.templateUrl, {
+                    cache: $templateCache
+                })
+                .success(function (response) {
+                    element.html(response);
+                    $compile(element.contents())(scope);
+                    scope.$emit('$triNgDialogTemplateLoaded');
+                })
+                .error(function () {
+                    // TODO... Finking what to do here :/
+                    scope.$emit('$triNgDialogTemplateError');
+                });
+
+            scope.$emit('$triNgDialogTemplateRequested');
+
             scope.closeClick = function () {
                 $root.$emit(dialog.namespace + '.dialog.close', dialog);
             };
@@ -44,7 +63,6 @@ mod.directive('dialog', [
 
         return {
             restrict: 'A',
-            require: '?ngController',
             link: link,
             scope: true
         };
@@ -117,9 +135,7 @@ mod.directive('dialogRoot', [
                     .element($interpolate(
                         '<section dialog="{{ label }}"' +
                             (dialog.controller ? ' ng-controller="{{ controller }} as ctrl"' :  '') +
-                        '>' +
-                            '<div ng-include="\'{{ templateUrl  }}\'" />' +
-                         '</section>'
+                        '></section>'
                     )(dialog))
                     .addClass(dialogManager.cfg.dialogClass + ' ' + dialog.dialogClass)
                     .css({
@@ -250,90 +266,100 @@ mod.provider('dialogManager', function () {
         };
     };
 
-    var DialogData = function (initialData) {
 
-        if (!initialData.templateUrl) {
-            // TODO: remove and add default template
-            throw new Error('dialog.DialogData() - initialData must contain defined "templateUrl"');
-        }
+    var DialogManagerService = function ($root, $log) {
 
-        var configData = _getDialogConfigData(initialData);
+        var DialogManager = function DialogManager() {
+            return angular.extend(this, {
+                dialogs: [],
+                cfg: _config
+            });
+        };
 
-        if (initialData.dynamicParams) { // for legacy reasons
-            configData.dynamicParams = initialData.dynamicParams;
-        }
+        var DialogData = function (initialData) {
 
-        if (initialData.scope) {
-            configData.scope = initialData.scope;
-        }
+            var configData;
 
-        Object.keys(configData).forEach(function (prop) { // for legacy reasons
-            delete initialData[prop];
+            if (!initialData.templateUrl) {
+                // TODO: remove and add default template
+                $log.error(new Error('triNgDialog.DialogData() - initialData must contain defined "templateUrl"'));
+            }
+
+            configData = _getDialogConfigData(initialData); // TODO: when dropping legacy, config and initial data will be one
+
+            if (initialData.scope) {
+                configData.scope = initialData.scope;
+            }
+
+            /*
+             * LEGACY
+             */
+            if (initialData.dynamicParams) {
+                configData.dynamicParams = initialData.dynamicParams;
+            }
+            Object.keys(configData).forEach(function (prop) {
+                delete initialData[prop];
+            });
+            /*
+             * END LEGACY
+             */
+
+
+            return angular.extend(this, configData, {
+                data: initialData // for legacy reasons
+            });
+        };
+
+        angular.extend(DialogManager.prototype, {
+
+            hasAny: function (namespace) {
+                return this.dialogs.filter(function (dialog) {
+                    return dialog.namespace === namespace;
+                }).length > 0;
+            },
+
+            getUpperDialog: function () {
+                var count = this.dialogs.length;
+                return count > 0 && this.dialogs[count - 1];
+            },
+
+            registerDialog: function (dialog) {
+                dialog.label = this.dialogs.push(dialog) - 1;
+                return dialog;
+            },
+
+            unregisterDialog: function (label) {
+                var dialog = this.dialogs[label];
+                if (dialog && dialog.label === label) {
+                    this.dialogs.splice(label, 1);
+                    return true;
+                }
+                return false;
+            },
+
+            triggerDialog: function (data) {
+                data = data || {};
+                $root.$emit(
+                        (data.namespace || this.cfg.mainNamespace) + '.dialog.open',
+                    this.registerDialog(
+                        new DialogData(data)
+                    )
+                );
+                return this;
+            }
         });
 
-        angular.extend(this, configData);
-        this.data = initialData;  // for legacy reasons
+        return new DialogManager();
     };
 
     return {
-
-        DialogData: DialogData,
 
         config: function (cfg) {
             angular.extend(_config, cfg);
             return this;
         },
 
-        $get: ['$rootScope', function ($root) {
-
-            var DialogManager = function DialogManager() {
-                return angular.extend(this, {
-                    dialogs: [],
-                    cfg: _config
-                });
-            };
-
-            angular.extend(DialogManager.prototype, {
-
-                hasAny: function (namespace) {
-                    return this.dialogs.filter(function (dialog) {
-                        return dialog.namespace === namespace;
-                    }).length > 0;
-                },
-
-                getUpperDialog: function () {
-                    var count = this.dialogs.length;
-                    return count > 0 && this.dialogs[count - 1];
-                },
-
-                registerDialog: function (dialog) {
-                    dialog.label = this.dialogs.push(dialog) - 1;
-                    return dialog;
-                },
-
-                unregisterDialog: function (label) {
-                    var dialog = this.dialogs[label];
-                    if (dialog && dialog.label === label) {
-                        this.dialogs.splice(label, 1);
-                        return true;
-                    }
-                    return false;
-                },
-
-                triggerDialog: function (data) {
-                    data = data || {};
-                    $root.$emit(
-                        (data.namespace || this.cfg.mainNamespace) + '.dialog.open',
-                        this.registerDialog(
-                            new DialogData(data)
-                        )
-                    );
-                    return this;
-                }
-            });
-
-            return new DialogManager();
-        }]
+        $get: ['$rootScope', '$log', DialogManagerService]
     };
 });
 

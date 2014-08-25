@@ -1,4 +1,4 @@
-(function (app, ng) {
+(function (app) {
     'use strict';
 
     app.config([
@@ -12,6 +12,15 @@
         }
     ]);
 
+    app.controller('DialogSimpleCtrl', [
+        '$scope',
+        function ($scope) {
+            $scope.$on('$triNgDialogTemplateRequested', console.log.bind(console, '$triNgDialogTemplateRequested'));
+            $scope.$on('$triNgDialogTemplateLoaded', console.log.bind(console, '$triNgDialogTemplateLoaded'));
+            $scope.$on('$triNgDialogTemplateError', console.log.bind(console, '$triNgDialogTemplateError'));
+        }
+    ]);
+
     app.controller('DialogTriggersList', [
         '$scope',
         'dialogManager',
@@ -19,6 +28,7 @@
 
             $scope.dialog440 = function () {
                 dialogManager.triggerDialog({
+                    controller: 'DialogSimpleCtrl',
                     templateUrl: 'partials/dialog.html',
                     dialogClass: 'dialog-440',
                     anotherDialog: function () {
@@ -29,6 +39,7 @@
 
             $scope.dialog800 = function () {
                 dialogManager.triggerDialog({
+                    controller: 'DialogSimpleCtrl',
                     templateUrl: 'partials/dialog.html',
                     dialogClass: 'dialog-800',
                     topOffset: 0,
@@ -38,7 +49,15 @@
                     }
                 });
             };
+
+            $scope.dialogFail = function () {
+                dialogManager.triggerDialog({
+                    controller: 'DialogSimpleCtrl',
+                    templateUrl: 'partials/dia_XXX_g.html',
+                    dialogClass: 'dialog-440'
+                });
+            };
         }
     ]);
 
-}(angular.module('demoApp', ['triNgDialog']), angular));
+}(angular.module('demoApp', ['triNgDialog'])));

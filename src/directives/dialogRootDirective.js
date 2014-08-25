@@ -65,9 +65,7 @@ mod.directive('dialogRoot', [
                     .element($interpolate(
                         '<section dialog="{{ label }}"' +
                             (dialog.controller ? ' ng-controller="{{ controller }} as ctrl"' :  '') +
-                        '>' +
-                            '<div ng-include="\'{{ templateUrl  }}\'" />' +
-                         '</section>'
+                        '></section>'
                     )(dialog))
                     .addClass(dialogManager.cfg.dialogClass + ' ' + dialog.dialogClass)
                     .css({
@@ -132,7 +130,7 @@ mod.directive('dialogRoot', [
                 };
 
                 var closeDialog = function (e, dialog) {
-                    dialogManager.unregisterDialog(dialog.label);
+                    dialogManager.unRegisterDialog(dialog.label);
                     !dialogManager.hasAny(namespaceForEvents) && element.removeClass(rootClass);
 
                     utils.updateMask(tMask, namespaceForEvents);

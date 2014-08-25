@@ -2,9 +2,12 @@
 
 mod.directive('dialog', [
     '$rootScope',
+    '$http',
     '$animate',
+    '$compile',
+    '$templateCache',
     'dialogManager',
-    function ($root, $animate, dialogManager) {
+    function ($root, $http, $animate, $compile, $templateCache, dialogManager) {
 
         var link = function (scope, element, attrs) {
 
@@ -24,6 +27,22 @@ mod.directive('dialog', [
 
             angular.isObject(dialog.scope) && angular.extend(scope, dialog.scope);
 
+            $http
+                .get(dialog.templateUrl, {
+                    cache: $templateCache
+                })
+                .success(function (response) {
+                    element.html(response);
+                    $compile(element.contents())(scope);
+                    scope.$emit('$triNgDialogTemplateLoaded');
+                })
+                .error(function () {
+                    // TODO... Finking what to do here :/
+                    scope.$emit('$triNgDialogTemplateError');
+                });
+
+            scope.$emit('$triNgDialogTemplateRequested');
+
             scope.closeClick = function () {
                 $root.$emit(dialog.namespace + '.dialog.close', dialog);
             };
@@ -38,7 +57,6 @@ mod.directive('dialog', [
 
         return {
             restrict: 'A',
-            require: '?ngController',
             link: link,
             scope: true
         };
