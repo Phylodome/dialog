@@ -6,7 +6,8 @@ mod.provider('dialogManager', function () {
         rootClass: 'dialog-root',
         maskClass: 'dialog-mask',
         dialogClass: 'dialog',
-        mainNamespace: 'main'
+        mainNamespace: 'main',
+        showClass: 'show' // class added to mask with angular $animate
     };
 
     var DialogManagerService = function ($root, $log) {
@@ -20,7 +21,7 @@ mod.provider('dialogManager', function () {
 
         var DialogData = function (config, data) {
             if (!config.templateUrl) {
-                // TODO: remove and add default template
+                // TODO: remove and add default template maybe
                 $log.error(new Error('triNgDialog.DialogData() - initialData must contain defined "templateUrl"'));
             }
             return this._updateDialogConfigData(config, data);

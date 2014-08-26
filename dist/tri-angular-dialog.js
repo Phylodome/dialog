@@ -259,7 +259,8 @@ mod.provider('dialogManager', function () {
         rootClass: 'dialog-root',
         maskClass: 'dialog-mask',
         dialogClass: 'dialog',
-        mainNamespace: 'main'
+        mainNamespace: 'main',
+        showClass: 'show' // class added to mask with angular $animate
     };
 
     var DialogManagerService = function ($root, $log) {
