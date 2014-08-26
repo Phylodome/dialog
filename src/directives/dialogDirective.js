@@ -13,16 +13,21 @@ mod.directive('dialog', [
         var link = function (scope, element, attrs) {
 
             var dialog = dialogManager.dialogs[attrs.dialog];
+
             var locals = {
                 $data: dialog.data,
                 $scope: scope
             };
 
             var init = function (innerLink) {
+                var dialogCtrl;
                 if (dialog.controller) {
-                    scope.dialogCtrl = $controller(dialog.controller, locals);
-                    element.data('$ngControllerController', scope.dialogCtrl);
-                    element.children().data('$ngControllerController', scope.dialogCtrl);
+                    dialogCtrl = $controller(dialog.controller, locals);
+                    element.data('$ngControllerController', dialogCtrl);
+                    element.children().data('$ngControllerController', dialogCtrl);
+                    if (dialog.controllerAs) {
+                        scope[dialog.controllerAs] = dialogCtrl;
+                    }
                 }
                 innerLink(scope);
             };

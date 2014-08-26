@@ -7,20 +7,23 @@ Can be triggered from JavaScript:
 ---------------------------------
 
 ```javascript
-dialogManager.triggerDialog(someDialogData);
+dialogManager.triggerDialog(someDialogDataConfig, someDataToBePassedToController);
 ```
 
 Sample dialog config:
 ---------------------
 
 ```javascript
-someDialogData = {
-    dialogClass:        (String),       // CSS class specific for this dialog
-    controller:         (String),       // angular controller name, the one to control dialog contents
-    topOffset:          (Number, Bool)  // percent of top offset, if 0 or false will bo shown on top of viewport
-    modal:              (Bool),         // if true click on mask does not close dialog
-    namespace:          (String),       // 'label' to match 'dialog-root', defaults to 'main'
-    templateUrl:        (String),       // route to template, MUST BE
+someDialogConfig = {
+    controller:    (String),    // angular controller name or constructor
+    controllerAs:  (String),    // name of controller to be used in dialog's
+    dialogClass:   (String),    // CSS class specific for this dialog
+    modal:         (Bool),     // if true click on mask does not close dialog
+    namespace:     (String),    // 'label' to match proper 'dialog-root', defaults to 'main'
+    templateUrl:   (String),    // route to template, MUST BE
+    // top offset (in scrolled viewport) number of pixels or '123px' or '32%'
+    // (0, false or null will put it on top of viewport)
+    topOffset:     (String, Number, Bool)
 }
 ```
 
@@ -32,16 +35,11 @@ The Dialog Module can be configured globally
 
 ```
 app.config(['dialogManagerProvider', function (dialogManagerProvider) {
-
     dialogManagerProvider.config({
          baseZindex: 3000, // minimum z-index for mask
          rootClass: 'dialog-root', // class base for dialog-root tag (when inner dialogs are active)
          maskClass: 'dialog-mask', // class for mask
          dialogClass: 'dialog', // class for dialog itself
-         // those one will be removed/replaced when dialog will use angular $animate service
-         showClass: 'show', // class added to dialog and mask 100ms after dialog is appended inside dialog-root
-         hideClass: 'hide' // class added to dialog and mask 600ms before dialog is removed inside dialog-root
      });
-
 }]);
 ```

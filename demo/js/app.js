@@ -14,12 +14,13 @@
 
     app.controller('DialogSimpleCtrl', [
         '$scope',
-        '$data',
-        function ($scope, $data) {
+        '$log',
+        '$data', // from 'locals' passed to $controller
+        function ($scope, $log, $data) {
             $scope.$data = $data;
-            $scope.$on('$triNgDialogTemplateRequested', console.log.bind(console, '$triNgDialogTemplateRequested'));
-            $scope.$on('$triNgDialogTemplateLoaded', console.log.bind(console, '$triNgDialogTemplateLoaded'));
-            $scope.$on('$triNgDialogTemplateError', console.log.bind(console, '$triNgDialogTemplateError'));
+            $scope.$on('$triNgDialogTemplateRequested', $log.log.bind($log));
+            $scope.$on('$triNgDialogTemplateLoaded', $log.log.bind($log));
+            $scope.$on('$triNgDialogTemplateError', $log.log.bind($log));
         }
     ]);
 
@@ -45,7 +46,7 @@
                     controller: 'DialogSimpleCtrl',
                     templateUrl: 'partials/dialog.html',
                     dialogClass: 'dialog-800',
-                    topOffset: 0,
+                    topOffset: '33px',
                     modal: true
                 }, {
                     anotherDialog: function () {
@@ -58,7 +59,8 @@
                 dialogManager.triggerDialog({
                     controller: 'DialogSimpleCtrl',
                     templateUrl: 'partials/dia_XXX_g.html',
-                    dialogClass: 'dialog-440'
+                    dialogClass: 'dialog-440',
+                    topOffset: '50%'
                 });
             };
         }

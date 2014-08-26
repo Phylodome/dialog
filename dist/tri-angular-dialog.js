@@ -19,16 +19,21 @@ mod.directive('dialog', [
         var link = function (scope, element, attrs) {
 
             var dialog = dialogManager.dialogs[attrs.dialog];
+
             var locals = {
                 $data: dialog.data,
                 $scope: scope
             };
 
             var init = function (innerLink) {
+                var dialogCtrl;
                 if (dialog.controller) {
-                    scope.dialogCtrl = $controller(dialog.controller, locals);
-                    element.data('$ngControllerController', scope.dialogCtrl);
-                    element.children().data('$ngControllerController', scope.dialogCtrl);
+                    dialogCtrl = $controller(dialog.controller, locals);
+                    element.data('$ngControllerController', dialogCtrl);
+                    element.children().data('$ngControllerController', dialogCtrl);
+                    if (dialog.controllerAs) {
+                        scope[dialog.controllerAs] = dialogCtrl;
+                    }
                 }
                 innerLink(scope);
             };
@@ -121,20 +126,26 @@ mod.directive('dialogRoot', [
                 return docBody.scrollTop || docElem.scrollTop;
             },
 
-            getTopOffset: function (percentTopOffset) {
-                /* jshint -W041 */
-                var parsed = percentTopOffset != null ? parseInt(percentTopOffset, 10) : 20;
-                if (isNaN(parsed)) {
-                    return this.getTopScroll() + 'px';
+            getTopOffset: function (topOffset) {
+                var _vh = this.getViewportSize().height;
+                var _ts = this.getTopScroll();
+                var _parsed = parseInt(topOffset, 10);
+
+                if (angular.isUndefined(topOffset)) {
+                    return _ts + _vh / 5 + 'px';
+                } else if (!isNaN(_parsed)) {
+                    if (angular.isString(topOffset) && topOffset.charAt(topOffset.length - 1) === '%') {
+                        return _ts + _vh * _parsed / 100 + 'px';
+                    }
+                    return _ts + _parsed + 'px';
                 }
-                return (this.getTopScroll() + this.getViewportSize().height * (parsed / 100)) + 'px';
+                return _ts + 'px';
+
             },
 
             getElem: function (dialog) {
                 return angular
-                    .element($interpolate(
-                        '<section dialog="{{ label }}"></section>'
-                    )(dialog))
+                    .element('<section dialog="' + dialog.label + '"></section>')
                     .addClass(dialogManager.cfg.dialogClass + ' ' + dialog.dialogClass)
                     .css({
                         zIndex: dialogManager.cfg.baseZindex + (dialog.label + 1) * 2,
@@ -248,9 +259,7 @@ mod.provider('dialogManager', function () {
         rootClass: 'dialog-root',
         maskClass: 'dialog-mask',
         dialogClass: 'dialog',
-        mainNamespace: 'main',
-        showClass: 'show',
-        hideClass: 'hide'
+        mainNamespace: 'main'
     };
 
     var DialogManagerService = function ($root, $log) {

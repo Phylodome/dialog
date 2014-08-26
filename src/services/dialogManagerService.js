@@ -6,9 +6,7 @@ mod.provider('dialogManager', function () {
         rootClass: 'dialog-root',
         maskClass: 'dialog-mask',
         dialogClass: 'dialog',
-        mainNamespace: 'main',
-        showClass: 'show',
-        hideClass: 'hide'
+        mainNamespace: 'main'
     };
 
     var DialogManagerService = function ($root, $log) {
