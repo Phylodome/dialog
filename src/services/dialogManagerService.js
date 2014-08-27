@@ -1,94 +1,64 @@
 'use strict';
-mod.provider('dialogManager', function () {
+mod.provider('dialogManager', [
+    'dialogConfig',
+    function (dialogConfig) {
 
-    var _config = {
-        baseZindex: 3000,
-        rootClass: 'dialog-root',
-        maskClass: 'dialog-mask',
-        dialogClass: 'dialog',
-        mainNamespace: 'main',
-        showClass: 'show' // class added to mask with angular $animate
-    };
+        var DialogManagerService = function ($root, dialogConfig, dialogData) {
 
-    var DialogManagerService = function ($root, $log) {
-
-        var DialogManager = function DialogManager() {
-            return angular.extend(this, {
-                dialogs: [],
-                cfg: _config
-            });
-        };
-
-        var DialogData = function (config, data) {
-            if (!config.templateUrl) {
-                // TODO: remove and add default template maybe
-                $log.error(new Error('triNgDialog.DialogData() - initialData must contain defined "templateUrl"'));
-            }
-            return this._updateDialogConfigData(config, data);
-        };
-
-        angular.extend(DialogData.prototype, {
-            _updateDialogConfigData: function (config, data) {
+            var DialogManager = function DialogManager() {
                 return angular.extend(this, {
-                    controller: config.controller,
-                    controllerAs: config.controllerAs,
-                    dialogClass: config.dialogClass || '',
-                    topOffset: config.topOffset,
-                    modal: config.modal || false,
-                    namespace: config.namespace || _config.mainNamespace,
-                    templateUrl: config.templateUrl,
-                    data: data
+                    dialogs: []
                 });
-            }
-        });
+            };
 
-        angular.extend(DialogManager.prototype, {
+            angular.extend(DialogManager.prototype, {
 
-            hasAny: function (namespace) {
-                return this.dialogs.some(function (dialog) {
-                    return dialog.namespace === namespace;
-                });
-            },
+                hasAny: function (namespace) {
+                    return this.dialogs.some(function (dialog) {
+                        return dialog.namespace === namespace;
+                    });
+                },
 
-            getUpperDialog: function () {
-                var count = this.dialogs.length;
-                return count > 0 && this.dialogs[count - 1];
-            },
+                getUpperDialog: function () {
+                    var count = this.dialogs.length;
+                    return count > 0 && this.dialogs[count - 1];
+                },
 
-            registerDialog: function (dialog) {
-                dialog.label = this.dialogs.push(dialog) - 1;
-                return dialog;
-            },
+                registerDialog: function (dialog) {
+                    dialog.label = this.dialogs.push(dialog) - 1;
+                    return dialog;
+                },
 
-            unRegisterDialog: function (label) {
-                var dialog = this.dialogs[label];
-                if (dialog && dialog.label === label) {
-                    this.dialogs.splice(label, 1);
-                    return true;
+                unRegisterDialog: function (label) {
+                    var dialog = this.dialogs[label];
+                    if (dialog && dialog.label === label) {
+                        this.dialogs.splice(label, 1);
+                        return true;
+                    }
+                    return false;
+                },
+
+                triggerDialog: function (config, data) {
+                    config = config || {};
+                    $root.$emit(
+                        (config.namespace || dialogConfig.mainNamespace) + '.dialog.open',
+                        this.registerDialog(dialogData(config, data))
+                    );
+                    return this;
                 }
-                return false;
+            });
+
+            return new DialogManager();
+        };
+
+        return {
+
+            config: function (cfg) {
+                angular.extend(dialogConfig, cfg);
+                return this;
             },
 
-            triggerDialog: function (config, data) {
-                config = config || {};
-                $root.$emit(
-                    (config.namespace || this.cfg.mainNamespace) + '.dialog.open',
-                    this.registerDialog(new DialogData(config, data))
-                );
-                return this;
-            }
-        });
-
-        return new DialogManager();
-    };
-
-    return {
-
-        config: function (cfg) {
-            angular.extend(_config, cfg);
-            return this;
-        },
-
-        $get: ['$rootScope', '$log', DialogManagerService]
-    };
-});
+            $get: ['$rootScope', 'dialogConfig', 'dialogData', DialogManagerService]
+        };
+    }
+]);
