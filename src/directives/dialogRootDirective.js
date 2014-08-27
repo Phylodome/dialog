@@ -7,8 +7,9 @@ mod.directive('dialogRoot', [
     '$interpolate',
     '$document',
     '$animate',
+    'dialogConfig',
     'dialogManager',
-    function ($compile, $location, $rootScope, $interpolate, $document, $animate, dialogManager) {
+    function ($compile, $location, $rootScope, $interpolate, $document, $animate, dialogConfig, dialogManager) {
 
         var docBody = document.body;
         var docElem = document.documentElement;
@@ -71,19 +72,19 @@ mod.directive('dialogRoot', [
             getElem: function (dialog) {
                 return angular
                     .element('<section dialog="' + dialog.label + '"></section>')
-                    .addClass(dialogManager.cfg.dialogClass + ' ' + dialog.dialogClass)
+                    .addClass(dialogConfig.dialogClass + ' ' + dialog.dialogClass)
                     .css({
-                        zIndex: dialogManager.cfg.baseZindex + (dialog.label + 1) * 2,
+                        zIndex: dialogConfig.baseZindex + (dialog.label + 1) * 2,
                         top: this.getTopOffset(dialog.topOffset)
                     });
             },
 
             updateMask: function (mask, space) { // TODO: mask should be moved to own directive...
                 if (dialogManager.hasAny(space)) {
-                    mask.css('z-index', dialogManager.cfg.baseZindex + dialogManager.dialogs.length * 2 - 1);
-                    $animate.addClass(mask, dialogManager.cfg.showClass);
+                    mask.css('z-index', dialogConfig.baseZindex + dialogManager.dialogs.length * 2 - 1);
+                    $animate.addClass(mask, dialogConfig.showClass);
                 } else {
-                    $animate.removeClass(mask, dialogManager.cfg.showClass, function () {
+                    $animate.removeClass(mask, dialogConfig.showClass, function () {
                         mask.removeAttr('style');
                     });
                 }
@@ -100,11 +101,11 @@ mod.directive('dialogRoot', [
 
         var compile = function (tElement, tAttrs) {
             var tMask = angular.element('<div />');
-            var namespaceForEvents = tAttrs.dialogRoot || dialogManager.cfg.mainNamespace;
+            var namespaceForEvents = tAttrs.dialogRoot || dialogConfig.mainNamespace;
 
             tElement.append(tMask);
             tMask.addClass(
-                utils.extendClass(tAttrs.dialogRoot, dialogManager.cfg.maskClass)
+                utils.extendClass(tAttrs.dialogRoot, dialogConfig.maskClass)
             );
 
             tMask.bind('click', function () {
@@ -117,7 +118,7 @@ mod.directive('dialogRoot', [
 
             return function (scope, element, attrs) {
 
-                var rootClass = utils.extendClass(attrs.dialogRoot, dialogManager.cfg.rootClass);
+                var rootClass = utils.extendClass(attrs.dialogRoot, dialogConfig.rootClass);
 
                 var openDialog = function (e, dialog) {
                     element.addClass(rootClass);
@@ -155,14 +156,15 @@ mod.directive('dialogRoot', [
 mod.directive('body', [
     '$rootScope',
     '$document',
+    'dialogConfig',
     'dialogManager',
-    function ($root, $document, dialogManager) {
+    function ($root, $document, dialogConfig, dialogManager) {
         var link = function postLink() {
             $document.on('keydown keypress', function (event) {
                 var upperDialog = dialogManager.getUpperDialog();
                 if (event.which === 27 && upperDialog) {
                     $root.$emit(
-                        (upperDialog.namespace || dialogManager.cfg.mainNamespace) + '.dialog.close',
+                        (upperDialog.namespace || dialogConfig.mainNamespace) + '.dialog.close',
                         upperDialog
                     );
                     $root.$digest();

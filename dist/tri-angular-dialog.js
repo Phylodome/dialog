@@ -82,8 +82,9 @@ mod.directive('dialogRoot', [
     '$interpolate',
     '$document',
     '$animate',
+    'dialogConfig',
     'dialogManager',
-    function ($compile, $location, $rootScope, $interpolate, $document, $animate, dialogManager) {
+    function ($compile, $location, $rootScope, $interpolate, $document, $animate, dialogConfig, dialogManager) {
 
         var docBody = document.body;
         var docElem = document.documentElement;
@@ -146,19 +147,19 @@ mod.directive('dialogRoot', [
             getElem: function (dialog) {
                 return angular
                     .element('<section dialog="' + dialog.label + '"></section>')
-                    .addClass(dialogManager.cfg.dialogClass + ' ' + dialog.dialogClass)
+                    .addClass(dialogConfig.dialogClass + ' ' + dialog.dialogClass)
                     .css({
-                        zIndex: dialogManager.cfg.baseZindex + (dialog.label + 1) * 2,
+                        zIndex: dialogConfig.baseZindex + (dialog.label + 1) * 2,
                         top: this.getTopOffset(dialog.topOffset)
                     });
             },
 
             updateMask: function (mask, space) { // TODO: mask should be moved to own directive...
                 if (dialogManager.hasAny(space)) {
-                    mask.css('z-index', dialogManager.cfg.baseZindex + dialogManager.dialogs.length * 2 - 1);
-                    $animate.addClass(mask, dialogManager.cfg.showClass);
+                    mask.css('z-index', dialogConfig.baseZindex + dialogManager.dialogs.length * 2 - 1);
+                    $animate.addClass(mask, dialogConfig.showClass);
                 } else {
-                    $animate.removeClass(mask, dialogManager.cfg.showClass, function () {
+                    $animate.removeClass(mask, dialogConfig.showClass, function () {
                         mask.removeAttr('style');
                     });
                 }
@@ -175,11 +176,11 @@ mod.directive('dialogRoot', [
 
         var compile = function (tElement, tAttrs) {
             var tMask = angular.element('<div />');
-            var namespaceForEvents = tAttrs.dialogRoot || dialogManager.cfg.mainNamespace;
+            var namespaceForEvents = tAttrs.dialogRoot || dialogConfig.mainNamespace;
 
             tElement.append(tMask);
             tMask.addClass(
-                utils.extendClass(tAttrs.dialogRoot, dialogManager.cfg.maskClass)
+                utils.extendClass(tAttrs.dialogRoot, dialogConfig.maskClass)
             );
 
             tMask.bind('click', function () {
@@ -192,7 +193,7 @@ mod.directive('dialogRoot', [
 
             return function (scope, element, attrs) {
 
-                var rootClass = utils.extendClass(attrs.dialogRoot, dialogManager.cfg.rootClass);
+                var rootClass = utils.extendClass(attrs.dialogRoot, dialogConfig.rootClass);
 
                 var openDialog = function (e, dialog) {
                     element.addClass(rootClass);
@@ -230,14 +231,15 @@ mod.directive('dialogRoot', [
 mod.directive('body', [
     '$rootScope',
     '$document',
+    'dialogConfig',
     'dialogManager',
-    function ($root, $document, dialogManager) {
+    function ($root, $document, dialogConfig, dialogManager) {
         var link = function postLink() {
             $document.on('keydown keypress', function (event) {
                 var upperDialog = dialogManager.getUpperDialog();
                 if (event.which === 27 && upperDialog) {
                     $root.$emit(
-                        (upperDialog.namespace || dialogManager.cfg.mainNamespace) + '.dialog.close',
+                        (upperDialog.namespace || dialogConfig.mainNamespace) + '.dialog.close',
                         upperDialog
                     );
                     $root.$digest();
@@ -251,30 +253,31 @@ mod.directive('body', [
     }
 ]);
 
+// Source: src/services/dialogConfig.js
+mod.constant('dialogConfig', {
+    baseZindex: 3000,
+    rootClass: 'dialog-root',
+    maskClass: 'dialog-mask',
+    dialogClass: 'dialog',
+    mainNamespace: 'main',
+    showClass: 'show' // class added to mask with angular $animate
+});
+
 // Source: src/services/dialogManagerService.js
-mod.provider('dialogManager', function () {
+mod.provider('dialogManager', ['dialogConfig', function (dialogConfig) {
 
-    var _config = {
-        baseZindex: 3000,
-        rootClass: 'dialog-root',
-        maskClass: 'dialog-mask',
-        dialogClass: 'dialog',
-        mainNamespace: 'main',
-        showClass: 'show' // class added to mask with angular $animate
-    };
-
-    var DialogManagerService = function ($root, $log) {
+    var DialogManagerService = function ($root, $log, dialogConfig) {
 
         var DialogManager = function DialogManager() {
             return angular.extend(this, {
                 dialogs: [],
-                cfg: _config
+                cfg: dialogConfig
             });
         };
 
         var DialogData = function (config, data) {
             if (!config.templateUrl) {
-                // TODO: remove and add default template
+                // TODO: remove and add default template maybe
                 $log.error(new Error('triNgDialog.DialogData() - initialData must contain defined "templateUrl"'));
             }
             return this._updateDialogConfigData(config, data);
@@ -288,7 +291,7 @@ mod.provider('dialogManager', function () {
                     dialogClass: config.dialogClass || '',
                     topOffset: config.topOffset,
                     modal: config.modal || false,
-                    namespace: config.namespace || _config.mainNamespace,
+                    namespace: config.namespace || dialogConfig.mainNamespace,
                     templateUrl: config.templateUrl,
                     data: data
                 });
@@ -325,7 +328,7 @@ mod.provider('dialogManager', function () {
             triggerDialog: function (config, data) {
                 config = config || {};
                 $root.$emit(
-                    (config.namespace || this.cfg.mainNamespace) + '.dialog.open',
+                    (config.namespace || dialogConfig.mainNamespace) + '.dialog.open',
                     this.registerDialog(new DialogData(config, data))
                 );
                 return this;
@@ -338,12 +341,12 @@ mod.provider('dialogManager', function () {
     return {
 
         config: function (cfg) {
-            angular.extend(_config, cfg);
+            angular.extend(dialogConfig, cfg);
             return this;
         },
 
-        $get: ['$rootScope', '$log', DialogManagerService]
+        $get: ['$rootScope', '$log', 'dialogConfig', DialogManagerService]
     };
-});
+}]);
 
 })(angular.module('triNgDialog', ['ng', 'ngAnimate']));

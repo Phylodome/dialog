@@ -1,21 +1,12 @@
 'use strict';
-mod.provider('dialogManager', function () {
+mod.provider('dialogManager', ['dialogConfig', function (dialogConfig) {
 
-    var _config = {
-        baseZindex: 3000,
-        rootClass: 'dialog-root',
-        maskClass: 'dialog-mask',
-        dialogClass: 'dialog',
-        mainNamespace: 'main',
-        showClass: 'show' // class added to mask with angular $animate
-    };
-
-    var DialogManagerService = function ($root, $log) {
+    var DialogManagerService = function ($root, $log, dialogConfig) {
 
         var DialogManager = function DialogManager() {
             return angular.extend(this, {
                 dialogs: [],
-                cfg: _config
+                cfg: dialogConfig
             });
         };
 
@@ -35,7 +26,7 @@ mod.provider('dialogManager', function () {
                     dialogClass: config.dialogClass || '',
                     topOffset: config.topOffset,
                     modal: config.modal || false,
-                    namespace: config.namespace || _config.mainNamespace,
+                    namespace: config.namespace || dialogConfig.mainNamespace,
                     templateUrl: config.templateUrl,
                     data: data
                 });
@@ -72,7 +63,7 @@ mod.provider('dialogManager', function () {
             triggerDialog: function (config, data) {
                 config = config || {};
                 $root.$emit(
-                    (config.namespace || this.cfg.mainNamespace) + '.dialog.open',
+                    (config.namespace || dialogConfig.mainNamespace) + '.dialog.open',
                     this.registerDialog(new DialogData(config, data))
                 );
                 return this;
@@ -85,10 +76,10 @@ mod.provider('dialogManager', function () {
     return {
 
         config: function (cfg) {
-            angular.extend(_config, cfg);
+            angular.extend(dialogConfig, cfg);
             return this;
         },
 
-        $get: ['$rootScope', '$log', DialogManagerService]
+        $get: ['$rootScope', '$log', 'dialogConfig', DialogManagerService]
     };
-});
+}]);
