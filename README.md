@@ -1,7 +1,12 @@
 triAngular Dialog
 =================
 
+[![Built with Grunt](https://cdn.gruntjs.com/builtwith.png)](http://gruntjs.com/)
+
 AngularJS multi modal dialog module
+
+* [Triangular](http://triangular.io)
+* [Demo](http://jsfiddle.net/triangular/suh96jt6/embedded/result,js,html,css/)
 
 Can be triggered from JavaScript:
 ---------------------------------
