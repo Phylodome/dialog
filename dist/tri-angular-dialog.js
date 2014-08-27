@@ -5,76 +5,7 @@
 (function (mod) {
 'use strict';
 
-// Source: src/directives/dialogDirective.js
-mod.directive('dialog', [
-    '$rootScope',
-    '$http',
-    '$animate',
-    '$compile',
-    '$controller',
-    '$templateCache',
-    'dialogManager',
-    function ($root, $http, $animate, $compile, $controller, $templateCache, dialogManager) {
-
-        var link = function (scope, element, attrs) {
-
-            var dialog = dialogManager.dialogs[attrs.dialog];
-
-            var locals = {
-                $data: dialog.data,
-                $scope: scope
-            };
-
-            var init = function (innerLink) {
-                var dialogCtrl;
-                if (dialog.controller) {
-                    dialogCtrl = $controller(dialog.controller, locals);
-                    element.data('$ngControllerController', dialogCtrl);
-                    element.children().data('$ngControllerController', dialogCtrl);
-                    if (dialog.controllerAs) {
-                        scope[dialog.controllerAs] = dialogCtrl;
-                    }
-                }
-                innerLink(scope);
-            };
-
-            $http
-                .get(dialog.templateUrl, {
-                    cache: $templateCache
-                })
-                .success(function (response) {
-                    element.html(response);
-                    init($compile(element.contents()));
-                    scope.$emit('$triNgDialogTemplateLoaded');
-                })
-                .error(function () {
-                    // TODO... Finking what to do here :/
-                    scope.$emit('$triNgDialogTemplateError');
-                });
-
-            scope.$emit('$triNgDialogTemplateRequested');
-
-            scope.closeClick = function () {
-                $root.$emit(dialog.namespace + '.dialog.close', dialog);
-            };
-
-            $root.$on(dialog.namespace + '.dialog.close', function (e, closedDialog) {
-                if (closedDialog.label == dialog.label) {
-                    scope.$destroy();
-                    $animate.leave(element);
-                }
-            });
-        };
-
-        return {
-            restrict: 'A',
-            link: link,
-            scope: true
-        };
-    }
-]);
-
-// Source: src/directives/dialogRootDirective.js
+// Source: src/directives/dialog-root.js
 mod.directive('dialogRoot', [
     '$compile',
     '$rootScope',
@@ -165,7 +96,76 @@ mod.directive('body', [
     }
 ]);
 
-// Source: src/services/dialogConfig.js
+// Source: src/directives/dialog.js
+mod.directive('dialog', [
+    '$rootScope',
+    '$http',
+    '$animate',
+    '$compile',
+    '$controller',
+    '$templateCache',
+    'dialogManager',
+    function ($root, $http, $animate, $compile, $controller, $templateCache, dialogManager) {
+
+        var link = function (scope, element, attrs) {
+
+            var dialog = dialogManager.dialogs[attrs.dialog];
+
+            var locals = {
+                $data: dialog.data,
+                $scope: scope
+            };
+
+            var init = function (innerLink) {
+                var dialogCtrl;
+                if (dialog.controller) {
+                    dialogCtrl = $controller(dialog.controller, locals);
+                    element.data('$ngControllerController', dialogCtrl);
+                    element.children().data('$ngControllerController', dialogCtrl);
+                    if (dialog.controllerAs) {
+                        scope[dialog.controllerAs] = dialogCtrl;
+                    }
+                }
+                innerLink(scope);
+            };
+
+            $http
+                .get(dialog.templateUrl, {
+                    cache: $templateCache
+                })
+                .success(function (response) {
+                    element.html(response);
+                    init($compile(element.contents()));
+                    scope.$emit('$triNgDialogTemplateLoaded');
+                })
+                .error(function () {
+                    // TODO... Finking what to do here :/
+                    scope.$emit('$triNgDialogTemplateError');
+                });
+
+            scope.$emit('$triNgDialogTemplateRequested');
+
+            scope.closeClick = function () {
+                $root.$emit(dialog.namespace + '.dialog.close', dialog);
+            };
+
+            $root.$on(dialog.namespace + '.dialog.close', function (e, closedDialog) {
+                if (closedDialog.label == dialog.label) {
+                    scope.$destroy();
+                    $animate.leave(element);
+                }
+            });
+        };
+
+        return {
+            restrict: 'A',
+            link: link,
+            scope: true
+        };
+    }
+]);
+
+// Source: src/services/dialog-config.js
 mod.constant('dialogConfig', {
     baseZindex: 3000,
     rootClass: 'dialog-root',
@@ -175,7 +175,7 @@ mod.constant('dialogConfig', {
     showClass: 'show' // class added to mask with angular $animate
 });
 
-// Source: src/services/dialogDataFactory.js
+// Source: src/services/dialog-data.js
 mod.factory('dialogData', [
     '$log',
     'dialogConfig',
@@ -209,7 +209,7 @@ mod.factory('dialogData', [
     }
 ]);
 
-// Source: src/services/dialogManagerService.js
+// Source: src/services/dialog-manager.js
 mod.provider('dialogManager', [
     'dialogConfig',
     function (dialogConfig) {
@@ -274,7 +274,7 @@ mod.provider('dialogManager', [
     }
 ]);
 
-// Source: src/services/dialogUtilitiesService.js
+// Source: src/services/dialog-utilities.js
 mod.service('dialogUtilities', [
     '$animate',
     'dialogConfig',
