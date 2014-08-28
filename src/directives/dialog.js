@@ -54,8 +54,11 @@ mod.directive('dialog', [
 
             $root.$on(dialog.namespace + '.dialog.close', function (e, closedDialog) {
                 if (closedDialog.label == dialog.label) {
-                    scope.$destroy();
-                    $animate.leave(element);
+                    $animate.leave(element, function () {
+                        scope.$destroy();
+                    });
+                    dialogManager.unRegisterDialog(dialog.label);
+                    $root.$emit(dialog.namespace + '.dialog.closing', closedDialog);
                 }
             });
         };

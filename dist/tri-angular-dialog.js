@@ -5,6 +5,87 @@
 (function (mod) {
 'use strict';
 
+// Source: src/directives/dialog-mask.js
+mod.directive('triDialogMask', [
+    '$animate',
+    '$rootScope',
+    'dialogConfig',
+    'dialogManager',
+    'dialogUtilities',
+    function ($animate, $rootScope, dialogConfig, dialogManager, dialogUtilities) {
+
+        var controller = function ($scope, $element, dialogConfig, dialogManager) {
+            return angular.extend(this, {
+
+                visible: false,
+                parent: null,
+
+                update: function () {
+                    if (dialogManager.hasAny(this.namespace)) {
+                        $element.css('z-index', dialogConfig.baseZindex + dialogManager.dialogs.length * 2 - 1);
+
+                        if (!this.visible) {
+                            this.visible = true;
+                            $animate.enter(
+                                $element,
+                                this.parent,
+                                this.holder
+                            );
+                        }
+                    } else if (this.visible) {
+                        this.visible = false;
+                        $animate.leave($element);
+                    }
+                }
+            });
+        };
+
+        var preLink = function (scope, element, attrs, ctrl) {
+            var rootCtrl = ctrl[0];
+            var maskCtrl = ctrl[1];
+            maskCtrl.holder = rootCtrl.holder;
+            maskCtrl.namespace = rootCtrl.namespace;
+            maskCtrl.parent = element.parent();
+            element.addClass(rootCtrl.maskClass + ' ' + dialogConfig.maskClass);
+        };
+
+        var postLink = function (scope, element, attrs, ctrl) {
+            var maskCtrl = ctrl[1];
+
+            $rootScope.$on(dialogUtilities.eventLabel(maskCtrl.namespace, 'open'), function () {
+                maskCtrl.update();
+            });
+
+            $rootScope.$on(dialogUtilities.eventLabel(maskCtrl.namespace, 'closing'), function () {
+                maskCtrl.update();
+            });
+
+            element.on('click', function () {
+                var upperDialog = dialogManager.getUpperDialog();
+                if (upperDialog && !upperDialog.modal) {
+                    $rootScope.$emit(dialogUtilities.eventLabel(maskCtrl.namespace, 'close'), upperDialog);
+                    $rootScope.$digest();
+                }
+            });
+
+            element.remove();
+        };
+
+        return {
+            controller: ['$scope', '$element', 'dialogConfig', 'dialogManager', controller],
+            link: {
+                pre: preLink,
+                post: postLink
+            },
+            require: ['^dialogRoot', 'triDialogMask'],
+            restrict: 'A'
+        };
+    }
+]);
+
+
+
+
 // Source: src/directives/dialog-root.js
 mod.directive('dialogRoot', [
     '$compile',
@@ -16,57 +97,60 @@ mod.directive('dialogRoot', [
     'dialogUtilities',
     function ($compile, $rootScope, $document, $animate, dialogConfig, dialogManager, dialogUtilities) {
 
-        var compile = function (tElement, tAttrs) {
-            var tMask = angular.element('<div />');
-            var namespaceForEvents = tAttrs.dialogRoot || dialogConfig.mainNamespace;
+        var controller = function ($attrs, dialogConfig) {
 
-            tElement.append(tMask);
+            this.namespace = $attrs.dialogRoot || dialogConfig.mainNamespace;
 
-            tMask.addClass(
-                dialogUtilities.extendClass(tAttrs.dialogRoot, dialogConfig.maskClass)
-            );
-
-            tMask.bind('click', function () {
-                var upperDialog = dialogManager.getUpperDialog();
-                if (!upperDialog.modal) {
-                    $rootScope.$emit(dialogUtilities.eventLabel(namespaceForEvents, 'close'), upperDialog);
-                    $rootScope.$digest();
-                }
+            return angular.extend(this, {
+                holder: null,
+                mask: null,
+                maskClass: this.namespace + '-' + dialogConfig.maskClass,
+                rootClass: this.namespace + '-' + dialogConfig.rootClass
             });
+        };
 
-            return function (scope, element, attrs) {
+        var compile = function (tElement, tAttrs) {
+            var holder = angular.element('<!-- triNgDialog for ' + tAttrs.dialogRoot + ' dialog -->');
+            var mask = angular.element('<div tri:dialog-mask></div>');
+            tElement.append(holder);
 
-                var rootClass = dialogUtilities.extendClass(attrs.dialogRoot, dialogConfig.rootClass);
+            return function (scope, element, attrs, dialogRootCtrl) {
+
+
+                dialogRootCtrl.holder = holder;
 
                 var openDialog = function (e, dialog) {
-                    element.addClass(rootClass);
-
                     $animate.enter(
                         $compile(dialogUtilities.getElem(dialog))(scope),
-                        element,
-                        tMask
+                        element.addClass(dialogRootCtrl.rootClass),
+                        dialogRootCtrl.holder
                     );
-
                     (!$rootScope.$$phase) && $rootScope.$digest(); // because user can trigger dialog inside $apply
-
-                    dialogUtilities.updateMask(tMask, namespaceForEvents);
                 };
 
-                var closeDialog = function (e, dialog) {
-                    dialogManager.unRegisterDialog(dialog.label);
-                    !dialogManager.hasAny(namespaceForEvents) && element.removeClass(rootClass);
-
-                    dialogUtilities.updateMask(tMask, namespaceForEvents);
+                var closeDialog = function () {
+                    !dialogManager.hasAny(dialogRootCtrl.namespace) && element.removeClass(dialogRootCtrl.rootClass);
                 };
 
-                $rootScope.$on(dialogUtilities.eventLabel(namespaceForEvents, 'open'), openDialog);
-                $rootScope.$on(dialogUtilities.eventLabel(namespaceForEvents, 'close'), closeDialog);
+                $animate.enter(
+                    mask,
+                    element,
+                    dialogRootCtrl.holder,
+                    function () {
+                        $compile(mask)(scope);
+                    }
+                );
+
+                $rootScope.$on(dialogUtilities.eventLabel(dialogRootCtrl.namespace, 'open'), openDialog);
+                $rootScope.$on(dialogUtilities.eventLabel(dialogRootCtrl.namespace, 'closing'), closeDialog);
             };
         };
 
         return {
-            restrict: 'A',
-            compile: compile
+            compile: compile,
+            controller: ['$attrs', 'dialogConfig', controller],
+            require: 'dialogRoot',
+            restrict: 'A'
         };
     }
 ]);
@@ -151,8 +235,11 @@ mod.directive('dialog', [
 
             $root.$on(dialog.namespace + '.dialog.close', function (e, closedDialog) {
                 if (closedDialog.label == dialog.label) {
-                    scope.$destroy();
-                    $animate.leave(element);
+                    $animate.leave(element, function () {
+                        scope.$destroy();
+                    });
+                    dialogManager.unRegisterDialog(dialog.label);
+                    $root.$emit(dialog.namespace + '.dialog.closing', closedDialog);
                 }
             });
         };
@@ -171,8 +258,7 @@ mod.constant('dialogConfig', {
     rootClass: 'dialog-root',
     maskClass: 'dialog-mask',
     dialogClass: 'dialog',
-    mainNamespace: 'main',
-    showClass: 'show' // class added to mask with angular $animate
+    mainNamespace: 'main'
 });
 
 // Source: src/services/dialog-data.js
@@ -278,8 +364,7 @@ mod.provider('dialogManager', [
 mod.service('dialogUtilities', [
     '$animate',
     'dialogConfig',
-    'dialogManager',
-    function ($animate, dialogConfig, dialogManager) {
+    function ($animate, dialogConfig) {
 
         var docBody = document.body;
         var docElem = document.documentElement;
@@ -349,17 +434,6 @@ mod.service('dialogUtilities', [
                         zIndex: dialogConfig.baseZindex + (dialog.label + 1) * 2,
                         top: this.getTopOffset(dialog.topOffset)
                     });
-            },
-
-            updateMask: function (mask, space) { // TODO: mask should be moved to own directive...
-                if (dialogManager.hasAny(space)) {
-                    mask.css('z-index', dialogConfig.baseZindex + dialogManager.dialogs.length * 2 - 1);
-                    $animate.addClass(mask, dialogConfig.showClass);
-                } else {
-                    $animate.removeClass(mask, dialogConfig.showClass, function () {
-                        mask.removeAttr('style');
-                    });
-                }
             },
 
             eventLabel: function (typeAttrValue, eventType) {

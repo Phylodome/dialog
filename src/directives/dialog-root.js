@@ -10,57 +10,60 @@ mod.directive('dialogRoot', [
     'dialogUtilities',
     function ($compile, $rootScope, $document, $animate, dialogConfig, dialogManager, dialogUtilities) {
 
-        var compile = function (tElement, tAttrs) {
-            var tMask = angular.element('<div />');
-            var namespaceForEvents = tAttrs.dialogRoot || dialogConfig.mainNamespace;
+        var controller = function ($attrs, dialogConfig) {
 
-            tElement.append(tMask);
+            this.namespace = $attrs.dialogRoot || dialogConfig.mainNamespace;
 
-            tMask.addClass(
-                dialogUtilities.extendClass(tAttrs.dialogRoot, dialogConfig.maskClass)
-            );
-
-            tMask.bind('click', function () {
-                var upperDialog = dialogManager.getUpperDialog();
-                if (!upperDialog.modal) {
-                    $rootScope.$emit(dialogUtilities.eventLabel(namespaceForEvents, 'close'), upperDialog);
-                    $rootScope.$digest();
-                }
+            return angular.extend(this, {
+                holder: null,
+                mask: null,
+                maskClass: this.namespace + '-' + dialogConfig.maskClass,
+                rootClass: this.namespace + '-' + dialogConfig.rootClass
             });
+        };
 
-            return function (scope, element, attrs) {
+        var compile = function (tElement, tAttrs) {
+            var holder = angular.element('<!-- triNgDialog for ' + tAttrs.dialogRoot + ' dialog -->');
+            var mask = angular.element('<div tri:dialog-mask></div>');
+            tElement.append(holder);
 
-                var rootClass = dialogUtilities.extendClass(attrs.dialogRoot, dialogConfig.rootClass);
+            return function (scope, element, attrs, dialogRootCtrl) {
+
+
+                dialogRootCtrl.holder = holder;
 
                 var openDialog = function (e, dialog) {
-                    element.addClass(rootClass);
-
                     $animate.enter(
                         $compile(dialogUtilities.getElem(dialog))(scope),
-                        element,
-                        tMask
+                        element.addClass(dialogRootCtrl.rootClass),
+                        dialogRootCtrl.holder
                     );
-
                     (!$rootScope.$$phase) && $rootScope.$digest(); // because user can trigger dialog inside $apply
-
-                    dialogUtilities.updateMask(tMask, namespaceForEvents);
                 };
 
-                var closeDialog = function (e, dialog) {
-                    dialogManager.unRegisterDialog(dialog.label);
-                    !dialogManager.hasAny(namespaceForEvents) && element.removeClass(rootClass);
-
-                    dialogUtilities.updateMask(tMask, namespaceForEvents);
+                var closeDialog = function () {
+                    !dialogManager.hasAny(dialogRootCtrl.namespace) && element.removeClass(dialogRootCtrl.rootClass);
                 };
 
-                $rootScope.$on(dialogUtilities.eventLabel(namespaceForEvents, 'open'), openDialog);
-                $rootScope.$on(dialogUtilities.eventLabel(namespaceForEvents, 'close'), closeDialog);
+                $animate.enter(
+                    mask,
+                    element,
+                    dialogRootCtrl.holder,
+                    function () {
+                        $compile(mask)(scope);
+                    }
+                );
+
+                $rootScope.$on(dialogUtilities.eventLabel(dialogRootCtrl.namespace, 'open'), openDialog);
+                $rootScope.$on(dialogUtilities.eventLabel(dialogRootCtrl.namespace, 'closing'), closeDialog);
             };
         };
 
         return {
-            restrict: 'A',
-            compile: compile
+            compile: compile,
+            controller: ['$attrs', 'dialogConfig', controller],
+            require: 'dialogRoot',
+            restrict: 'A'
         };
     }
 ]);

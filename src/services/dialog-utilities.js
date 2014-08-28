@@ -3,8 +3,7 @@
 mod.service('dialogUtilities', [
     '$animate',
     'dialogConfig',
-    'dialogManager',
-    function ($animate, dialogConfig, dialogManager) {
+    function ($animate, dialogConfig) {
 
         var docBody = document.body;
         var docElem = document.documentElement;
@@ -74,17 +73,6 @@ mod.service('dialogUtilities', [
                         zIndex: dialogConfig.baseZindex + (dialog.label + 1) * 2,
                         top: this.getTopOffset(dialog.topOffset)
                     });
-            },
-
-            updateMask: function (mask, space) { // TODO: mask should be moved to own directive...
-                if (dialogManager.hasAny(space)) {
-                    mask.css('z-index', dialogConfig.baseZindex + dialogManager.dialogs.length * 2 - 1);
-                    $animate.addClass(mask, dialogConfig.showClass);
-                } else {
-                    $animate.removeClass(mask, dialogConfig.showClass, function () {
-                        mask.removeAttr('style');
-                    });
-                }
             },
 
             eventLabel: function (typeAttrValue, eventType) {
