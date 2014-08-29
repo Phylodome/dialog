@@ -8,9 +8,13 @@ mod.directive('dialog', [
     '$controller',
     '$templateCache',
     'dialogManager',
-    function ($root, $http, $animate, $compile, $controller, $templateCache, dialogManager) {
+    'dialogConfig',
+    'dialogUtilities',
+    function ($root, $http, $animate, $compile, $controller, $templateCache, dialogManager, dialogConfig, dialogUtilities) {
 
-        var link = function (scope, element, attrs) {
+        var preLink = function () {};
+
+        var postLink = function (scope, element, attrs) {
 
             var dialog = dialogManager.dialogs[attrs.dialog];
 
@@ -63,9 +67,24 @@ mod.directive('dialog', [
             });
         };
 
+        var compile = function (tElement, tAttrs) {
+            var dialog = dialogManager.dialogs[tAttrs.dialog];
+            tElement
+                .addClass(dialogConfig.dialogClass + ' ' + dialog.dialogClass)
+                .css({
+                    zIndex: dialogConfig.baseZindex + (dialog.label + 1) * 2,
+                    top: dialogUtilities.getTopOffset(dialog.topOffset)
+                });
+            return {
+                pre: preLink,
+                post: postLink
+            };
+        };
+
         return {
+            compile: compile,
+            require: '^dialogRoot',
             restrict: 'A',
-            link: link,
             scope: true
         };
     }

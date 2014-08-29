@@ -11,8 +11,7 @@ mod.directive('triDialogMask', [
     '$rootScope',
     'dialogConfig',
     'dialogManager',
-    'dialogUtilities',
-    function ($animate, $rootScope, dialogConfig, dialogManager, dialogUtilities) {
+    function ($animate, $rootScope, dialogConfig, dialogManager) {
 
         var controller = function ($scope, $element, dialogConfig, dialogManager) {
             return angular.extend(this, {
@@ -52,18 +51,13 @@ mod.directive('triDialogMask', [
         var postLink = function (scope, element, attrs, ctrl) {
             var maskCtrl = ctrl[1];
 
-            $rootScope.$on(dialogUtilities.eventLabel(maskCtrl.namespace, 'open'), function () {
-                maskCtrl.update();
-            });
-
-            $rootScope.$on(dialogUtilities.eventLabel(maskCtrl.namespace, 'closing'), function () {
-                maskCtrl.update();
-            });
+            $rootScope.$on(maskCtrl.namespace + '.dialog.open', maskCtrl.update.bind(maskCtrl));
+            $rootScope.$on(maskCtrl.namespace + '.dialog.closing', maskCtrl.update.bind(maskCtrl));
 
             element.on('click', function () {
                 var upperDialog = dialogManager.getUpperDialog();
                 if (upperDialog && !upperDialog.modal) {
-                    $rootScope.$emit(dialogUtilities.eventLabel(maskCtrl.namespace, 'close'), upperDialog);
+                    $rootScope.$emit(maskCtrl.namespace + '.dialog.close', upperDialog);
                     $rootScope.$digest();
                 }
             });
@@ -94,13 +88,20 @@ mod.directive('dialogRoot', [
     '$animate',
     'dialogConfig',
     'dialogManager',
-    'dialogUtilities',
-    function ($compile, $rootScope, $document, $animate, dialogConfig, dialogManager, dialogUtilities) {
+    function ($compile, $rootScope, $document, $animate, dialogConfig, dialogManager) {
+
+        $document.on('keydown keypress', function (event) {
+            // kind'a imperative, but we do not know if ng-app/$rootElement is on body/html or not
+            var upperDialog;
+            if (event.which === 27 && dialogManager.dialogs.length) {
+                upperDialog = dialogManager.getUpperDialog();
+                $rootScope.$emit(upperDialog.namespace + '.dialog.close', upperDialog);
+                $rootScope.$digest();
+            }
+        });
 
         var controller = function ($attrs, dialogConfig) {
-
             this.namespace = $attrs.dialogRoot || dialogConfig.mainNamespace;
-
             return angular.extend(this, {
                 holder: null,
                 mask: null,
@@ -109,40 +110,39 @@ mod.directive('dialogRoot', [
             });
         };
 
+        var postLink = function (scope, element, attrs, dialogRootCtrl) {
+            var openDialog = function (e, dialog) {
+                var dialogElement = angular.element('<section dialog="' + dialog.label + '"></section>');
+                $animate.enter(
+                    dialogElement,
+                    element.addClass(dialogRootCtrl.rootClass),
+                    dialogRootCtrl.holder
+                );
+                $compile(dialogElement)(scope);
+                (!$rootScope.$$phase) && $rootScope.$digest(); // because user can trigger dialog inside $apply
+            };
+
+            var closeDialog = function () {
+                !dialogManager.hasAny(dialogRootCtrl.namespace) && element.removeClass(dialogRootCtrl.rootClass);
+            };
+
+            dialogRootCtrl.holder.after(dialogRootCtrl.mask);
+            $compile(dialogRootCtrl.mask)(scope);
+            $rootScope.$on(dialogRootCtrl.namespace + '.dialog.open', openDialog);
+            $rootScope.$on(dialogRootCtrl.namespace + '.dialog.closing', closeDialog);
+        };
+
         var compile = function (tElement, tAttrs) {
             var holder = angular.element('<!-- triNgDialog for ' + tAttrs.dialogRoot + ' dialog -->');
             var mask = angular.element('<div tri:dialog-mask></div>');
             tElement.append(holder);
 
-            return function (scope, element, attrs, dialogRootCtrl) {
-
-
-                dialogRootCtrl.holder = holder;
-
-                var openDialog = function (e, dialog) {
-                    $animate.enter(
-                        $compile(dialogUtilities.getElem(dialog))(scope),
-                        element.addClass(dialogRootCtrl.rootClass),
-                        dialogRootCtrl.holder
-                    );
-                    (!$rootScope.$$phase) && $rootScope.$digest(); // because user can trigger dialog inside $apply
-                };
-
-                var closeDialog = function () {
-                    !dialogManager.hasAny(dialogRootCtrl.namespace) && element.removeClass(dialogRootCtrl.rootClass);
-                };
-
-                $animate.enter(
-                    mask,
-                    element,
-                    dialogRootCtrl.holder,
-                    function () {
-                        $compile(mask)(scope);
-                    }
-                );
-
-                $rootScope.$on(dialogUtilities.eventLabel(dialogRootCtrl.namespace, 'open'), openDialog);
-                $rootScope.$on(dialogUtilities.eventLabel(dialogRootCtrl.namespace, 'closing'), closeDialog);
+            return {
+                pre: function (scope, element, attrs, dialogRootCtrl) {
+                    dialogRootCtrl.holder = holder;
+                    dialogRootCtrl.mask = mask;
+                },
+                post: postLink
             };
         };
 
@@ -151,31 +151,6 @@ mod.directive('dialogRoot', [
             controller: ['$attrs', 'dialogConfig', controller],
             require: 'dialogRoot',
             restrict: 'A'
-        };
-    }
-]);
-
-mod.directive('body', [
-    '$rootScope',
-    '$document',
-    'dialogConfig',
-    'dialogManager',
-    function ($root, $document, dialogConfig, dialogManager) {
-        var link = function postLink() {
-            $document.on('keydown keypress', function (event) {
-                var upperDialog = dialogManager.getUpperDialog();
-                if (event.which === 27 && upperDialog) {
-                    $root.$emit(
-                        (upperDialog.namespace || dialogConfig.mainNamespace) + '.dialog.close',
-                        upperDialog
-                    );
-                    $root.$digest();
-                }
-            });
-        };
-        return {
-            restrict: 'E',
-            link: link
         };
     }
 ]);
@@ -189,9 +164,13 @@ mod.directive('dialog', [
     '$controller',
     '$templateCache',
     'dialogManager',
-    function ($root, $http, $animate, $compile, $controller, $templateCache, dialogManager) {
+    'dialogConfig',
+    'dialogUtilities',
+    function ($root, $http, $animate, $compile, $controller, $templateCache, dialogManager, dialogConfig, dialogUtilities) {
 
-        var link = function (scope, element, attrs) {
+        var preLink = function () {};
+
+        var postLink = function (scope, element, attrs) {
 
             var dialog = dialogManager.dialogs[attrs.dialog];
 
@@ -244,9 +223,24 @@ mod.directive('dialog', [
             });
         };
 
+        var compile = function (tElement, tAttrs) {
+            var dialog = dialogManager.dialogs[tAttrs.dialog];
+            tElement
+                .addClass(dialogConfig.dialogClass + ' ' + dialog.dialogClass)
+                .css({
+                    zIndex: dialogConfig.baseZindex + (dialog.label + 1) * 2,
+                    top: dialogUtilities.getTopOffset(dialog.topOffset)
+                });
+            return {
+                pre: preLink,
+                post: postLink
+            };
+        };
+
         return {
+            compile: compile,
+            require: '^dialogRoot',
             restrict: 'A',
-            link: link,
             scope: true
         };
     }
@@ -362,13 +356,9 @@ mod.provider('dialogManager', [
 
 // Source: src/services/dialog-utilities.js
 mod.service('dialogUtilities', [
-    '$animate',
-    'dialogConfig',
-    function ($animate, dialogConfig) {
-
+    function () {
         var docBody = document.body;
         var docElem = document.documentElement;
-
         var DialogUtilities = function () {};
 
         angular.extend(DialogUtilities.prototype, {
@@ -424,24 +414,6 @@ mod.service('dialogUtilities', [
                 }
                 return _ts + 'px';
 
-            },
-
-            getElem: function (dialog) {
-                return angular
-                    .element('<section dialog="' + dialog.label + '"></section>')
-                    .addClass(dialogConfig.dialogClass + ' ' + dialog.dialogClass)
-                    .css({
-                        zIndex: dialogConfig.baseZindex + (dialog.label + 1) * 2,
-                        top: this.getTopOffset(dialog.topOffset)
-                    });
-            },
-
-            eventLabel: function (typeAttrValue, eventType) {
-                return typeAttrValue + '.dialog.' + eventType;
-            },
-
-            extendClass: function (namespace, basicClass) {
-                return namespace ? namespace + '-' + basicClass : basicClass;
             }
         });
 

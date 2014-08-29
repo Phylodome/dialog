@@ -5,8 +5,7 @@ mod.directive('triDialogMask', [
     '$rootScope',
     'dialogConfig',
     'dialogManager',
-    'dialogUtilities',
-    function ($animate, $rootScope, dialogConfig, dialogManager, dialogUtilities) {
+    function ($animate, $rootScope, dialogConfig, dialogManager) {
 
         var controller = function ($scope, $element, dialogConfig, dialogManager) {
             return angular.extend(this, {
@@ -46,18 +45,13 @@ mod.directive('triDialogMask', [
         var postLink = function (scope, element, attrs, ctrl) {
             var maskCtrl = ctrl[1];
 
-            $rootScope.$on(dialogUtilities.eventLabel(maskCtrl.namespace, 'open'), function () {
-                maskCtrl.update();
-            });
-
-            $rootScope.$on(dialogUtilities.eventLabel(maskCtrl.namespace, 'closing'), function () {
-                maskCtrl.update();
-            });
+            $rootScope.$on(maskCtrl.namespace + '.dialog.open', maskCtrl.update.bind(maskCtrl));
+            $rootScope.$on(maskCtrl.namespace + '.dialog.closing', maskCtrl.update.bind(maskCtrl));
 
             element.on('click', function () {
                 var upperDialog = dialogManager.getUpperDialog();
                 if (upperDialog && !upperDialog.modal) {
-                    $rootScope.$emit(dialogUtilities.eventLabel(maskCtrl.namespace, 'close'), upperDialog);
+                    $rootScope.$emit(maskCtrl.namespace + '.dialog.close', upperDialog);
                     $rootScope.$digest();
                 }
             });

@@ -1,13 +1,9 @@
 'use strict';
 
 mod.service('dialogUtilities', [
-    '$animate',
-    'dialogConfig',
-    function ($animate, dialogConfig) {
-
+    function () {
         var docBody = document.body;
         var docElem = document.documentElement;
-
         var DialogUtilities = function () {};
 
         angular.extend(DialogUtilities.prototype, {
@@ -63,24 +59,6 @@ mod.service('dialogUtilities', [
                 }
                 return _ts + 'px';
 
-            },
-
-            getElem: function (dialog) {
-                return angular
-                    .element('<section dialog="' + dialog.label + '"></section>')
-                    .addClass(dialogConfig.dialogClass + ' ' + dialog.dialogClass)
-                    .css({
-                        zIndex: dialogConfig.baseZindex + (dialog.label + 1) * 2,
-                        top: this.getTopOffset(dialog.topOffset)
-                    });
-            },
-
-            eventLabel: function (typeAttrValue, eventType) {
-                return typeAttrValue + '.dialog.' + eventType;
-            },
-
-            extendClass: function (namespace, basicClass) {
-                return namespace ? namespace + '-' + basicClass : basicClass;
             }
         });
 
