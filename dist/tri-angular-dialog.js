@@ -8,70 +8,84 @@
 // Source: src/directives/dialog-mask.js
 mod.directive('triDialogMask', [
     '$animate',
-    '$rootScope',
     'dialogConfig',
     'dialogManager',
-    function ($animate, $rootScope, dialogConfig, dialogManager) {
+    function ($animate, dialogConfig, dialogManager) {
 
-        var controller = function ($scope, $element, dialogConfig, dialogManager) {
-            return angular.extend(this, {
+        var postLink = function (scope, element, attrs, rootCtrl, $transclude) {
+            var root = element.parent();
+            var previousElement = null;
+            var currentElement = null;
 
-                visible: false,
-                parent: null,
+            var updateZIndex = function (mask) {
+                mask.css('z-index', dialogConfig.baseZindex + dialogManager.dialogs.length * 2 - 1);
+            };
 
-                update: function () {
-                    if (dialogManager.hasAny(this.namespace)) {
-                        $element.css('z-index', dialogConfig.baseZindex + dialogManager.dialogs.length * 2 - 1);
-
-                        if (!this.visible) {
-                            this.visible = true;
-                            $animate.enter(
-                                $element,
-                                this.parent,
-                                this.holder
-                            );
-                        }
-                    } else if (this.visible) {
-                        this.visible = false;
-                        $animate.leave($element);
+            var update = function () {
+                if (dialogManager.hasAny(rootCtrl.namespace)) {
+                    if (currentElement) {
+                        updateZIndex(currentElement);
+                    } else {
+                        currentElement = $transclude(function (clone) {
+                            $animate.enter(clone, root);
+                            updateZIndex(clone);
+                            if (previousElement) {
+                                previousElement.remove();
+                                previousElement = null;
+                            }
+                        });
                     }
+                } else if (currentElement) {
+                    $animate.leave(currentElement, function () {
+                        previousElement = null;
+                    });
+                    previousElement = currentElement;
+                    currentElement = null;
                 }
-            });
-        };
+            };
 
-        var preLink = function (scope, element, attrs, ctrl) {
-            var rootCtrl = ctrl[0];
-            var maskCtrl = ctrl[1];
-            maskCtrl.holder = rootCtrl.holder;
-            maskCtrl.namespace = rootCtrl.namespace;
-            maskCtrl.parent = element.parent();
-            element.addClass(rootCtrl.maskClass + ' ' + dialogConfig.maskClass);
-        };
+            scope.$on(rootCtrl.namespace + '.dialog.open', update);
+            scope.$on(rootCtrl.namespace + '.dialog.closing', update);
 
-        var postLink = function (scope, element, attrs, ctrl) {
-            var maskCtrl = ctrl[1];
-
-            $rootScope.$on(maskCtrl.namespace + '.dialog.open', maskCtrl.update.bind(maskCtrl));
-            $rootScope.$on(maskCtrl.namespace + '.dialog.closing', maskCtrl.update.bind(maskCtrl));
-
-            element.on('click', function () {
-                var upperDialog = dialogManager.getUpperDialog();
-                if (upperDialog && !upperDialog.modal) {
-                    $rootScope.$emit(maskCtrl.namespace + '.dialog.close', upperDialog);
-                    $rootScope.$digest();
-                }
-            });
-
-            element.remove();
+            $animate.leave(currentElement);
         };
 
         return {
-            controller: ['$scope', '$element', 'dialogConfig', 'dialogManager', controller],
+            link: postLink,
+            priority: 100,
+            require: '^dialogRoot',
+            restrict: 'A',
+            terminal: true,
+            transclude: 'element'
+        };
+    }
+]);
+
+mod.directive('triDialogMask', [
+    'dialogManager',
+    'dialogConfig',
+    function (dialogManager, dialogConfig) {
+        var preLink = function (scope, element, attrs, rootCtrl) {
+            element.addClass(rootCtrl.maskClass + ' ' + dialogConfig.maskClass);
+        };
+
+        var postLink = function (scope, element, attrs, rootCtrl) {
+            element.on('click', function () {
+                var upperDialog = dialogManager.getUpperDialog();
+                if (upperDialog && !upperDialog.modal) {
+                    rootCtrl.broadcast('close', upperDialog);
+                    scope.$digest();
+                }
+            });
+        };
+
+        return {
             link: {
                 pre: preLink,
                 post: postLink
             },
-            require: ['^dialogRoot', 'triDialogMask'],
+            priority: -100,
+            require: '^dialogRoot',
             restrict: 'A'
         };
     }
@@ -95,69 +109,58 @@ mod.directive('dialogRoot', [
             var upperDialog;
             if (event.which === 27 && dialogManager.dialogs.length) {
                 upperDialog = dialogManager.getUpperDialog();
-                $rootScope.$emit(upperDialog.namespace + '.dialog.close', upperDialog);
+                $rootScope.$broadcast(upperDialog.namespace + '.dialog.close', upperDialog);
                 $rootScope.$digest();
             }
         });
 
-        var controller = function ($attrs, dialogConfig) {
+        var controller = function ($scope, $attrs, dialogConfig) {
             this.namespace = $attrs.dialogRoot || dialogConfig.mainNamespace;
             return angular.extend(this, {
-                holder: null,
-                mask: null,
                 maskClass: this.namespace + '-' + dialogConfig.maskClass,
-                rootClass: this.namespace + '-' + dialogConfig.rootClass
+                rootClass: this.namespace + '-' + dialogConfig.rootClass,
+
+                broadcast: function (eType, eData) {
+                    //noinspection JSPotentiallyInvalidUsageOfThis
+                    $scope.$broadcast(this.namespace + '.dialog.' + eType, eData);
+                },
+
+                listen: function (eType, eFn) {
+                    //noinspection JSPotentiallyInvalidUsageOfThis
+                    $scope.$on(this.namespace + '.dialog.' + eType, eFn);
+                }
+
             });
         };
 
         var postLink = function (scope, element, attrs, dialogRootCtrl) {
-            var openDialog = function (e, dialog) {
+            dialogRootCtrl.listen('open', function (e, dialog) {
                 var dialogElement = angular.element('<section dialog="' + dialog.label + '"></section>');
-                $animate.enter(
-                    dialogElement,
-                    element.addClass(dialogRootCtrl.rootClass),
-                    dialogRootCtrl.holder
-                );
+                $animate.enter(dialogElement, element.addClass(dialogRootCtrl.rootClass));
                 $compile(dialogElement)(scope);
-                (!$rootScope.$$phase) && $rootScope.$digest(); // because user can trigger dialog inside $apply
-            };
-
-            var closeDialog = function () {
+                (!scope.$$phase) && scope.$digest(); // because user can trigger dialog inside $apply
+            });
+            dialogRootCtrl.listen('closing', function () {
                 !dialogManager.hasAny(dialogRootCtrl.namespace) && element.removeClass(dialogRootCtrl.rootClass);
-            };
-
-            dialogRootCtrl.holder.after(dialogRootCtrl.mask);
-            $compile(dialogRootCtrl.mask)(scope);
-            $rootScope.$on(dialogRootCtrl.namespace + '.dialog.open', openDialog);
-            $rootScope.$on(dialogRootCtrl.namespace + '.dialog.closing', closeDialog);
+            });
         };
 
-        var compile = function (tElement, tAttrs) {
-            var holder = angular.element('<!-- triNgDialog for ' + tAttrs.dialogRoot + ' dialog -->');
-            var mask = angular.element('<div tri:dialog-mask></div>');
-            tElement.append(holder);
-
-            return {
-                pre: function (scope, element, attrs, dialogRootCtrl) {
-                    dialogRootCtrl.holder = holder;
-                    dialogRootCtrl.mask = mask;
-                },
-                post: postLink
-            };
+        var template = function (tElement) {
+            tElement.append('<div tri:dialog-mask></div>');
         };
 
         return {
-            compile: compile,
-            controller: ['$attrs', 'dialogConfig', controller],
+            controller: ['$scope', '$attrs', 'dialogConfig', controller],
+            link: postLink,
             require: 'dialogRoot',
-            restrict: 'A'
+            restrict: 'A',
+            template: template
         };
     }
 ]);
 
 // Source: src/directives/dialog.js
 mod.directive('dialog', [
-    '$rootScope',
     '$http',
     '$animate',
     '$compile',
@@ -166,11 +169,11 @@ mod.directive('dialog', [
     'dialogManager',
     'dialogConfig',
     'dialogUtilities',
-    function ($root, $http, $animate, $compile, $controller, $templateCache, dialogManager, dialogConfig, dialogUtilities) {
+    function ($http, $animate, $compile, $controller, $templateCache, dialogManager, dialogConfig, dialogUtilities) {
 
         var preLink = function () {};
 
-        var postLink = function (scope, element, attrs) {
+        var postLink = function (scope, element, attrs, dialogRootCtrl) {
 
             var dialog = dialogManager.dialogs[attrs.dialog];
 
@@ -179,7 +182,7 @@ mod.directive('dialog', [
                 $scope: scope
             };
 
-            var init = function (innerLink) {
+            var init = function (innerLink, element, dialog) {
                 var dialogCtrl;
                 if (dialog.controller) {
                     dialogCtrl = $controller(dialog.controller, locals);
@@ -198,7 +201,7 @@ mod.directive('dialog', [
                 })
                 .success(function (response) {
                     element.html(response);
-                    init($compile(element.contents()));
+                    init($compile(element.contents()), element, dialog);
                     scope.$emit('$triNgDialogTemplateLoaded');
                 })
                 .error(function () {
@@ -209,16 +212,18 @@ mod.directive('dialog', [
             scope.$emit('$triNgDialogTemplateRequested');
 
             scope.closeClick = function () {
-                $root.$emit(dialog.namespace + '.dialog.close', dialog);
+                dialogRootCtrl.broadcast('close', dialog);
             };
 
-            $root.$on(dialog.namespace + '.dialog.close', function (e, closedDialog) {
+            scope.$on(dialog.namespace + '.dialog.close', function (e, closedDialog) {
                 if (closedDialog.label == dialog.label) {
                     $animate.leave(element, function () {
                         scope.$destroy();
+                        dialog.destroy();
+                        element = dialog = null;
                     });
                     dialogManager.unRegisterDialog(dialog.label);
-                    $root.$emit(dialog.namespace + '.dialog.closing', closedDialog);
+                    dialogRootCtrl.broadcast('closing', closedDialog);
                 }
             });
         };
@@ -280,6 +285,15 @@ mod.factory('dialogData', [
                     $log.error(new Error('triNgDialog.DialogData() - initialData must contain defined "templateUrl"'));
                 }
                 return angular.extend(this, config, {data: data});
+            },
+
+            destroy: function () {
+                var key;
+                for (key in this) {
+                    if (this.hasOwnProperty(key)) {
+                        delete this[key];
+                    }
+                }
             }
         });
 

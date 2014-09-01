@@ -1,71 +1,84 @@
 'use strict';
-
 mod.directive('triDialogMask', [
     '$animate',
-    '$rootScope',
     'dialogConfig',
     'dialogManager',
-    function ($animate, $rootScope, dialogConfig, dialogManager) {
+    function ($animate, dialogConfig, dialogManager) {
 
-        var controller = function ($scope, $element, dialogConfig, dialogManager) {
-            return angular.extend(this, {
+        var postLink = function (scope, element, attrs, rootCtrl, $transclude) {
+            var root = element.parent();
+            var previousElement = null;
+            var currentElement = null;
 
-                visible: false,
-                parent: null,
+            var updateZIndex = function (mask) {
+                mask.css('z-index', dialogConfig.baseZindex + dialogManager.dialogs.length * 2 - 1);
+            };
 
-                update: function () {
-                    if (dialogManager.hasAny(this.namespace)) {
-                        $element.css('z-index', dialogConfig.baseZindex + dialogManager.dialogs.length * 2 - 1);
-
-                        if (!this.visible) {
-                            this.visible = true;
-                            $animate.enter(
-                                $element,
-                                this.parent,
-                                this.holder
-                            );
-                        }
-                    } else if (this.visible) {
-                        this.visible = false;
-                        $animate.leave($element);
+            var update = function () {
+                if (dialogManager.hasAny(rootCtrl.namespace)) {
+                    if (currentElement) {
+                        updateZIndex(currentElement);
+                    } else {
+                        currentElement = $transclude(function (clone) {
+                            $animate.enter(clone, root);
+                            updateZIndex(clone);
+                            if (previousElement) {
+                                previousElement.remove();
+                                previousElement = null;
+                            }
+                        });
                     }
+                } else if (currentElement) {
+                    $animate.leave(currentElement, function () {
+                        previousElement = null;
+                    });
+                    previousElement = currentElement;
+                    currentElement = null;
                 }
-            });
-        };
+            };
 
-        var preLink = function (scope, element, attrs, ctrl) {
-            var rootCtrl = ctrl[0];
-            var maskCtrl = ctrl[1];
-            maskCtrl.holder = rootCtrl.holder;
-            maskCtrl.namespace = rootCtrl.namespace;
-            maskCtrl.parent = element.parent();
-            element.addClass(rootCtrl.maskClass + ' ' + dialogConfig.maskClass);
-        };
+            scope.$on(rootCtrl.namespace + '.dialog.open', update);
+            scope.$on(rootCtrl.namespace + '.dialog.closing', update);
 
-        var postLink = function (scope, element, attrs, ctrl) {
-            var maskCtrl = ctrl[1];
-
-            $rootScope.$on(maskCtrl.namespace + '.dialog.open', maskCtrl.update.bind(maskCtrl));
-            $rootScope.$on(maskCtrl.namespace + '.dialog.closing', maskCtrl.update.bind(maskCtrl));
-
-            element.on('click', function () {
-                var upperDialog = dialogManager.getUpperDialog();
-                if (upperDialog && !upperDialog.modal) {
-                    $rootScope.$emit(maskCtrl.namespace + '.dialog.close', upperDialog);
-                    $rootScope.$digest();
-                }
-            });
-
-            element.remove();
+            $animate.leave(currentElement);
         };
 
         return {
-            controller: ['$scope', '$element', 'dialogConfig', 'dialogManager', controller],
+            link: postLink,
+            priority: 100,
+            require: '^dialogRoot',
+            restrict: 'A',
+            terminal: true,
+            transclude: 'element'
+        };
+    }
+]);
+
+mod.directive('triDialogMask', [
+    'dialogManager',
+    'dialogConfig',
+    function (dialogManager, dialogConfig) {
+        var preLink = function (scope, element, attrs, rootCtrl) {
+            element.addClass(rootCtrl.maskClass + ' ' + dialogConfig.maskClass);
+        };
+
+        var postLink = function (scope, element, attrs, rootCtrl) {
+            element.on('click', function () {
+                var upperDialog = dialogManager.getUpperDialog();
+                if (upperDialog && !upperDialog.modal) {
+                    rootCtrl.broadcast('close', upperDialog);
+                    scope.$digest();
+                }
+            });
+        };
+
+        return {
             link: {
                 pre: preLink,
                 post: postLink
             },
-            require: ['^dialogRoot', 'triDialogMask'],
+            priority: -100,
+            require: '^dialogRoot',
             restrict: 'A'
         };
     }

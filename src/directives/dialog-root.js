@@ -14,62 +14,52 @@ mod.directive('dialogRoot', [
             var upperDialog;
             if (event.which === 27 && dialogManager.dialogs.length) {
                 upperDialog = dialogManager.getUpperDialog();
-                $rootScope.$emit(upperDialog.namespace + '.dialog.close', upperDialog);
+                $rootScope.$broadcast(upperDialog.namespace + '.dialog.close', upperDialog);
                 $rootScope.$digest();
             }
         });
 
-        var controller = function ($attrs, dialogConfig) {
+        var controller = function ($scope, $attrs, dialogConfig) {
             this.namespace = $attrs.dialogRoot || dialogConfig.mainNamespace;
             return angular.extend(this, {
-                holder: null,
-                mask: null,
                 maskClass: this.namespace + '-' + dialogConfig.maskClass,
-                rootClass: this.namespace + '-' + dialogConfig.rootClass
+                rootClass: this.namespace + '-' + dialogConfig.rootClass,
+
+                broadcast: function (eType, eData) {
+                    //noinspection JSPotentiallyInvalidUsageOfThis
+                    $scope.$broadcast(this.namespace + '.dialog.' + eType, eData);
+                },
+
+                listen: function (eType, eFn) {
+                    //noinspection JSPotentiallyInvalidUsageOfThis
+                    $scope.$on(this.namespace + '.dialog.' + eType, eFn);
+                }
+
             });
         };
 
         var postLink = function (scope, element, attrs, dialogRootCtrl) {
-            var openDialog = function (e, dialog) {
+            dialogRootCtrl.listen('open', function (e, dialog) {
                 var dialogElement = angular.element('<section dialog="' + dialog.label + '"></section>');
-                $animate.enter(
-                    dialogElement,
-                    element.addClass(dialogRootCtrl.rootClass),
-                    dialogRootCtrl.holder
-                );
+                $animate.enter(dialogElement, element.addClass(dialogRootCtrl.rootClass));
                 $compile(dialogElement)(scope);
-                (!$rootScope.$$phase) && $rootScope.$digest(); // because user can trigger dialog inside $apply
-            };
-
-            var closeDialog = function () {
+                (!scope.$$phase) && scope.$digest(); // because user can trigger dialog inside $apply
+            });
+            dialogRootCtrl.listen('closing', function () {
                 !dialogManager.hasAny(dialogRootCtrl.namespace) && element.removeClass(dialogRootCtrl.rootClass);
-            };
-
-            dialogRootCtrl.holder.after(dialogRootCtrl.mask);
-            $compile(dialogRootCtrl.mask)(scope);
-            $rootScope.$on(dialogRootCtrl.namespace + '.dialog.open', openDialog);
-            $rootScope.$on(dialogRootCtrl.namespace + '.dialog.closing', closeDialog);
+            });
         };
 
-        var compile = function (tElement, tAttrs) {
-            var holder = angular.element('<!-- triNgDialog for ' + tAttrs.dialogRoot + ' dialog -->');
-            var mask = angular.element('<div tri:dialog-mask></div>');
-            tElement.append(holder);
-
-            return {
-                pre: function (scope, element, attrs, dialogRootCtrl) {
-                    dialogRootCtrl.holder = holder;
-                    dialogRootCtrl.mask = mask;
-                },
-                post: postLink
-            };
+        var template = function (tElement) {
+            tElement.append('<div tri:dialog-mask></div>');
         };
 
         return {
-            compile: compile,
-            controller: ['$attrs', 'dialogConfig', controller],
+            controller: ['$scope', '$attrs', 'dialogConfig', controller],
+            link: postLink,
             require: 'dialogRoot',
-            restrict: 'A'
+            restrict: 'A',
+            template: template
         };
     }
 ]);

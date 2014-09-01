@@ -23,6 +23,15 @@ mod.factory('dialogData', [
                     $log.error(new Error('triNgDialog.DialogData() - initialData must contain defined "templateUrl"'));
                 }
                 return angular.extend(this, config, {data: data});
+            },
+
+            destroy: function () {
+                var key;
+                for (key in this) {
+                    if (this.hasOwnProperty(key)) {
+                        delete this[key];
+                    }
+                }
             }
         });
 

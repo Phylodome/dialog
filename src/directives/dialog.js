@@ -1,7 +1,6 @@
 'use strict';
 
 mod.directive('dialog', [
-    '$rootScope',
     '$http',
     '$animate',
     '$compile',
@@ -10,11 +9,11 @@ mod.directive('dialog', [
     'dialogManager',
     'dialogConfig',
     'dialogUtilities',
-    function ($root, $http, $animate, $compile, $controller, $templateCache, dialogManager, dialogConfig, dialogUtilities) {
+    function ($http, $animate, $compile, $controller, $templateCache, dialogManager, dialogConfig, dialogUtilities) {
 
         var preLink = function () {};
 
-        var postLink = function (scope, element, attrs) {
+        var postLink = function (scope, element, attrs, dialogRootCtrl) {
 
             var dialog = dialogManager.dialogs[attrs.dialog];
 
@@ -23,7 +22,7 @@ mod.directive('dialog', [
                 $scope: scope
             };
 
-            var init = function (innerLink) {
+            var init = function (innerLink, element, dialog) {
                 var dialogCtrl;
                 if (dialog.controller) {
                     dialogCtrl = $controller(dialog.controller, locals);
@@ -42,7 +41,7 @@ mod.directive('dialog', [
                 })
                 .success(function (response) {
                     element.html(response);
-                    init($compile(element.contents()));
+                    init($compile(element.contents()), element, dialog);
                     scope.$emit('$triNgDialogTemplateLoaded');
                 })
                 .error(function () {
@@ -53,16 +52,18 @@ mod.directive('dialog', [
             scope.$emit('$triNgDialogTemplateRequested');
 
             scope.closeClick = function () {
-                $root.$emit(dialog.namespace + '.dialog.close', dialog);
+                dialogRootCtrl.broadcast('close', dialog);
             };
 
-            $root.$on(dialog.namespace + '.dialog.close', function (e, closedDialog) {
+            scope.$on(dialog.namespace + '.dialog.close', function (e, closedDialog) {
                 if (closedDialog.label == dialog.label) {
                     $animate.leave(element, function () {
                         scope.$destroy();
+                        dialog.destroy();
+                        element = dialog = null;
                     });
                     dialogManager.unRegisterDialog(dialog.label);
-                    $root.$emit(dialog.namespace + '.dialog.closing', closedDialog);
+                    dialogRootCtrl.broadcast('closing', closedDialog);
                 }
             });
         };
