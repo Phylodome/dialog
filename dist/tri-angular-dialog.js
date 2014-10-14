@@ -179,23 +179,28 @@ mod.directive('triDialog', [
             var dialog = dialogManager.dialogs[attrs.triDialog];
 
             var locals = {
+                $dialog: dialog,
                 $data: dialog.data,
                 $scope: scope
             };
 
-            var init = function (innerLink, element, dialog) {
-                var dialogCtrl;
-                if (dialog.controller) {
-                    // TODO: move it out of here to catch template requested event
-                    dialogCtrl = $controller(dialog.controller, locals);
+            var dialogCtrl;
+
+            var init = function (element) {
+                var innerLink = $compile(element.contents());
+                if (dialogCtrl) {
                     element.data('$triDialogController', dialogCtrl);
                     element.children().data('$triDialogController', dialogCtrl);
-                    if (dialog.controllerAs) {
-                        scope[dialog.controllerAs] = dialogCtrl;
-                    }
                 }
                 innerLink(scope);
             };
+
+            if (dialog.controller) { // TODO: instantiate just before transclude inclusion
+                dialogCtrl = $controller(dialog.controller, locals);
+                if (dialog.controllerAs) {
+                    scope[dialog.controllerAs] = dialogCtrl;
+                }
+            }
 
             $http
                 .get(dialog.templateUrl, {
@@ -203,7 +208,7 @@ mod.directive('triDialog', [
                 })
                 .success(function (response) {
                     element.html(response);
-                    init($compile(element.contents()), element, dialog);
+                    init(element);
                     scope.$emit(dialogConfig.eventPrefix + dialogConfig.eventTemplate + dialogConfig.eventLoaded);
                 })
                 .error(function () {
@@ -213,9 +218,14 @@ mod.directive('triDialog', [
 
             scope.$emit(dialogConfig.eventPrefix + dialogConfig.eventTemplate + dialogConfig.eventRequested);
 
+            // TODO: move to dialog entity
+            //
             scope.closeClick = function () {
                 dialogRootCtrl.broadcast(dialogConfig.eventClose, dialog);
             };
+            //
+            // end TODO
+
 
             scope.$on(dialog.namespace + dialogConfig.eventCore + dialogConfig.eventClose, function (e, closedDialog) {
                 if (closedDialog.label == dialog.label) {
@@ -234,7 +244,7 @@ mod.directive('triDialog', [
             var dialog = dialogManager.dialogs[tAttrs.triDialog];
             tElement
                 .addClass(dialogConfig.dialogClass + ' ' + dialog.dialogClass)
-                .css({
+                .css({ // TODO do that during transclude inclusion
                     zIndex: dialogConfig.baseZindex + (dialog.label + 1) * 2,
                     top: dialogUtilities.getTopOffset(dialog.topOffset)
                 });
