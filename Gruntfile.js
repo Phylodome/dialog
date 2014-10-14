@@ -1,126 +1,63 @@
-module.exports = function(grunt) {
+/**
+ * Gruntfile [ copied from sails.js ]
+ *
+ * This Node script is executed when you run `grunt`.
+ * It's purpose is to load the Grunt tasks in your project's `tasks`
+ * folder, and allow you to add and remove tasks as you see fit.
+ *
+ * WARNING:
+ * Unless you know what you're doing, you shouldn't change this file.
+ * Check out the `tasks` directory instead.
+ */
 
-    grunt.loadNpmTasks('grunt-contrib-jshint');
-    grunt.loadNpmTasks('grunt-contrib-clean');
-    grunt.loadNpmTasks('grunt-contrib-copy');
-    grunt.loadNpmTasks('grunt-contrib-concat');
-    grunt.loadNpmTasks('grunt-contrib-uglify');
+module.exports = function (grunt) {
 
-    grunt.loadNpmTasks('grunt-bower-task');
 
-    grunt.initConfig({
-        pkg: grunt.file.readJSON('package.json'),
+    /**
+     * Load the include-all library in order to require all of our grunt
+     * configurations and task registrations dynamically.
+     */
+    var includeAll = require('include-all');
 
-        bower: {
-            install: {
-                options: {
-                    targetDir: 'demo/vendor',
-                    verbose: true,
-                    cleanTargetDir: true,
-                    cleanBowerDir: true
-                }
+    /**
+     * Loads Grunt configuration modules from the specified
+     * relative path. These modules should export a function
+     * that, when run, should either load/configure or register
+     * a Grunt task.
+     */
+    function loadTasks(relPath) {
+        return includeAll({
+            dirname: require('path').resolve(__dirname, relPath),
+            filter: /(.+)\.js$/
+        }) || {};
+    }
+
+    /**
+     * Invokes the function from a Grunt configuration module with
+     * a single argument - the `grunt` object.
+     */
+    function invokeConfigFn(tasks) {
+        for (var taskName in tasks) {
+            if (tasks.hasOwnProperty(taskName)) {
+                tasks[taskName](grunt);
             }
-        },
-
-        jshint: {
-            options: {
-                "camelcase": true,
-                "curly": true,
-                "expr": true,
-                "eqeqeq": false,
-                "freeze": true,
-                "globalstrict": true,
-                "globals": {
-                    "angular": false,
-                    "window": false,
-                    "document": false,
-                    "mod": false
-                },
-                "immed": true,
-                "indent": 4,
-                "latedef": true,
-                "maxdepth": 2,
-                "maxstatements": 12,
-                "maxcomplexity": 5,
-                "noarg": true,
-                "noempty": true,
-                "nonew": true,
-                "quotmark": true,
-                "strict": true,
-                "trailing": true,
-                "undef": true,
-                "unused": true,
-                "white": true
-            },
-            default: [
-                'src/**/*.js'
-            ]
-        },
-
-        concat: {
-            dist: {
-                options: {
-                    banner: '/*!\n * triAngular Dialog\n */\n\n(function (mod) {\n\'use strict\';\n\n',
-                    separator:'\n\n',
-                    footer: '\n\n})(angular.module(\'triNgDialog\', [\'ng\', \'ngAnimate\']));',
-                    process: function(src, filepath) {
-                        return '// Source: ' + filepath + '\n' +
-                            src.replace(/(^|\n)[ \t]*('use strict'|"use strict");?\s*/g, '$1');
-                    }
-                },
-                files: {
-                    'tmp/tri-angular-dialog.js': [
-                        'src/directives/*.js',
-                        'src/services/*.js'
-                    ]
-                }
-            }
-        },
-
-        uglify: {
-            options: {
-                report: 'min',
-                sourceMap: true,
-                sourceMapName: 'tmp/tri-angular-dialog.min.js.map',
-                preserveComments: 'some'
-            },
-            my_target: {
-                files: {
-                    'tmp/tri-angular-dialog.min.js': ['tmp/tri-angular-dialog.js']
-                }
-            }
-        },
-
-        copy: {
-            main: {
-                files: [
-                    {src: ['tmp/tri-angular-dialog.js'], dest: 'dist/tri-angular-dialog.js'},
-                    {src: ['tmp/tri-angular-dialog.min.js'], dest: 'dist/tri-angular-dialog.min.js'},
-                    {src: ['tmp/tri-angular-dialog.min.js.map'], dest: 'dist/tri-angular-dialog.min.js.map'},
-                    {src: ['tmp/tri-angular-dialog.js'], dest: 'demo/vendor/tri-angular/tri-angular-dialog.js'}
-                ]
-            }
-        },
-
-        clean: {
-            'default': ['tmp/'],
-            'pre': ['dist/']
         }
+    }
 
-    });
 
-    grunt.registerTask('default', [
-        'jshint',
-        'concat:dist',
-        'uglify',
-        'clean:pre',
-        'copy',
-        'clean:default'
-    ]);
+    // Load task functions
+    var taskConfigurations = loadTasks('./tasks/config'),
+        registerDefinitions = loadTasks('./tasks/register');
 
-    grunt.registerTask('set-dev', [
-        'bower',
-        'default'
-    ]);
+    // (ensure that a default task exists)
+    if (!registerDefinitions.default) {
+        registerDefinitions.default = function (grunt) {
+            grunt.registerTask('default', []);
+        };
+    }
+
+    // Run task functions to configure Grunt.
+    invokeConfigFn(taskConfigurations);
+    invokeConfigFn(registerDefinitions);
 
 };
