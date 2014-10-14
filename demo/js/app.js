@@ -15,9 +15,11 @@
     app.controller('DialogSimpleCtrl', [
         '$scope',
         '$log',
-        '$data', // from 'locals' passed to $controller
-        function ($scope, $log, $data) {
-            $scope.$data = this.$data = $data;
+        '$data',
+        '$dialog', // from 'locals' passed to $controller
+        function ($scope, $log, $data, $dialog) {
+            $scope.$data = $data;
+            $scope.$dialog = $dialog;
             $scope.$on('triDialogTemplateRequested', $log.log);
             $scope.$on('triDialogTemplateLoaded', $log.log);
             $scope.$on('triDialogTemplateError', $log.log);
@@ -26,11 +28,11 @@
 
     app.controller('DialogTriggersList', [
         '$scope',
-        'triDialogManager',
-        function ($scope, dialogManager) {
+        'triDialog',
+        function ($scope, triDialog) {
 
             $scope.dialog440 = function () {
-                dialogManager.triggerDialog({
+                triDialog({
                     controller: 'DialogSimpleCtrl',
                     templateUrl: 'partials/dialog.html',
                     dialogClass: 'dialog-440'
@@ -42,7 +44,7 @@
             };
 
             $scope.dialog800 = function () {
-                dialogManager.triggerDialog({
+                triDialog({
                     controller: 'DialogSimpleCtrl',
                     templateUrl: 'partials/dialog.html',
                     dialogClass: 'dialog-800',
@@ -56,7 +58,7 @@
             };
 
             $scope.dialogFail = function () {
-                dialogManager.triggerDialog({
+                triDialog({
                     controller: 'DialogSimpleCtrl',
                     templateUrl: 'partials/dia_XXX_g.html',
                     dialogClass: 'dialog-440',

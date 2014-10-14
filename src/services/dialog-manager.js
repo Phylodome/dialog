@@ -3,11 +3,12 @@ mod.provider('triDialogManager', [
     'triDialogConfig',
     function (dialogConfig) {
 
-        var DialogManagerService = function ($root, dialogConfig, dialogData) {
+        var DialogManagerService = function ($log, dialogConfig) {
 
             var DialogManager = function DialogManager() {
                 return angular.extend(this, {
-                    dialogs: []
+                    dialogs: [],
+                    roots: {}
                 });
             };
 
@@ -38,12 +39,43 @@ mod.provider('triDialogManager', [
                     return false;
                 },
 
-                triggerDialog: function (config, data) {
-                    config = config || {};
-                    $root.$emit(
-                        (config.namespace || dialogConfig.mainNamespace) + dialogConfig.eventCore + dialogConfig.eventOpen,
-                        this.registerDialog(dialogData(config, data))
-                    );
+                triggerDialog: function (dialog) {
+                    if (!this.roots.hasOwnProperty(dialog.namespace)) {
+                        $log.error(new Error('TriDialog: rootCtrl ' + dialog.namespace + ' is not registered!'));
+                        return this;
+                    }
+                    this.roots[dialog.namespace].broadcast(dialogConfig.eventOpen, this.registerDialog(dialog));
+                    return this;
+                },
+
+                closeDialog: function (dialog) {
+                    if (!this.roots.hasOwnProperty(dialog.namespace)) {
+                        $log.error(new Error('TriDialog: rootCtrl ' + dialog.namespace + ' is not registered!'));
+                        return this;
+                    }
+                    this.roots[dialog.namespace].broadcast(dialogConfig.eventClose, dialog);
+                    return this;
+                },
+
+                registerRoot: function (ctrl) {
+                    if (!ctrl.namespace) {
+                        $log.error(new Error('TriDialog: rootCtrl has no namespace assigned!'));
+                        return this;
+                    }
+                    if (this.roots.hasOwnProperty(ctrl.namespace)) {
+                        $log.error(new Error('TriDialog: rootCtrl ' + ctrl.namespace + ' already registered!'));
+                        return this;
+                    }
+                    this.roots[ctrl.namespace] = ctrl;
+                    return this;
+                },
+
+                unRegisterRoot: function (ctrl) {
+                    if (!this.roots.hasOwnProperty(ctrl.namespace)) {
+                        $log.error(new Error('TriDialog: rootCtrl ' + ctrl.namespace + ' is not registered!'));
+                        return this;
+                    }
+                    delete this.roots[ctrl.namespace];
                     return this;
                 }
             });
@@ -58,7 +90,7 @@ mod.provider('triDialogManager', [
                 return this;
             },
 
-            $get: ['$rootScope', 'triDialogConfig', 'triDialogData', DialogManagerService]
+            $get: ['$log', 'triDialogConfig', DialogManagerService]
         };
     }
 ]);

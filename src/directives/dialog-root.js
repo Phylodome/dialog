@@ -22,8 +22,13 @@ mod.directive('triDialogRoot', [
             }
         });
 
-        var controller = function ($scope, $attrs, dialogConfig) {
+        var controller = function ($scope, $attrs, dialogConfig, dialogManager) {
             this.namespace = $attrs.triDialogRoot || dialogConfig.mainNamespace;
+            dialogManager.registerRoot(this);
+            $scope.$on('$destroy', angular.bind(this, function () {
+                //noinspection JSPotentiallyInvalidUsageOfThis
+                dialogManager.unRegisterRoot(this);
+            }));
             return angular.extend(this, {
                 maskClass: this.namespace + '-' + dialogConfig.maskClass,
                 rootClass: this.namespace + '-' + dialogConfig.rootClass,
@@ -58,7 +63,7 @@ mod.directive('triDialogRoot', [
         };
 
         return {
-            controller: ['$scope', '$attrs', 'triDialogConfig', controller],
+            controller: ['$scope', '$attrs', 'triDialogConfig', 'triDialogManager', controller],
             link: postLink,
             require: 'triDialogRoot',
             restrict: 'A',

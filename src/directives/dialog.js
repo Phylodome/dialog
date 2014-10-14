@@ -55,15 +55,6 @@ mod.directive('triDialog', [
 
             scope.$emit(dialogConfig.eventPrefix + dialogConfig.eventTemplate + dialogConfig.eventRequested);
 
-            // TODO: move to dialog entity
-            //
-            scope.closeClick = function () {
-                dialogRootCtrl.broadcast(dialogConfig.eventClose, dialog);
-            };
-            //
-            // end TODO
-
-
             scope.$on(dialog.namespace + dialogConfig.eventCore + dialogConfig.eventClose, function (e, closedDialog) {
                 if (closedDialog.label == dialog.label) {
                     $animate.leave(element, function () {

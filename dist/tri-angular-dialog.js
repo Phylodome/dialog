@@ -117,8 +117,13 @@ mod.directive('triDialogRoot', [
             }
         });
 
-        var controller = function ($scope, $attrs, dialogConfig) {
+        var controller = function ($scope, $attrs, dialogConfig, dialogManager) {
             this.namespace = $attrs.triDialogRoot || dialogConfig.mainNamespace;
+            dialogManager.registerRoot(this);
+            $scope.$on('$destroy', angular.bind(this, function () {
+                //noinspection JSPotentiallyInvalidUsageOfThis
+                dialogManager.unRegisterRoot(this);
+            }));
             return angular.extend(this, {
                 maskClass: this.namespace + '-' + dialogConfig.maskClass,
                 rootClass: this.namespace + '-' + dialogConfig.rootClass,
@@ -153,7 +158,7 @@ mod.directive('triDialogRoot', [
         };
 
         return {
-            controller: ['$scope', '$attrs', 'triDialogConfig', controller],
+            controller: ['$scope', '$attrs', 'triDialogConfig', 'triDialogManager', controller],
             link: postLink,
             require: 'triDialogRoot',
             restrict: 'A',
@@ -218,15 +223,6 @@ mod.directive('triDialog', [
 
             scope.$emit(dialogConfig.eventPrefix + dialogConfig.eventTemplate + dialogConfig.eventRequested);
 
-            // TODO: move to dialog entity
-            //
-            scope.closeClick = function () {
-                dialogRootCtrl.broadcast(dialogConfig.eventClose, dialog);
-            };
-            //
-            // end TODO
-
-
             scope.$on(dialog.namespace + dialogConfig.eventCore + dialogConfig.eventClose, function (e, closedDialog) {
                 if (closedDialog.label == dialog.label) {
                     $animate.leave(element, function () {
@@ -278,59 +274,17 @@ mod.constant('triDialogConfig', {
     eventTemplate: 'Template'
 });
 
-// Source: src/services/dialog-data.js
-mod.factory('triDialogData', [
-    '$log',
-    'triDialogConfig',
-    function ($log, dialogConfig) {
-
-        var DialogData = function () {
-            return angular.extend(this, {
-                controller: null,
-                controllerAs: null,
-                dialogClass: '',
-                topOffset: null,
-                modal: false,
-                namespace: dialogConfig.mainNamespace,
-                templateUrl: null
-            });
-        };
-
-        angular.extend(DialogData.prototype, {
-            _updateDialogConfigData: function (config, data) {
-                if (!config.templateUrl) {
-                    // TODO: remove and add default template maybe
-                    $log.error(new Error('triNgDialog.DialogData() - initialData must contain defined "templateUrl"'));
-                }
-                return angular.extend(this, config, {data: data});
-            },
-
-            destroy: function () {
-                var key;
-                for (key in this) {
-                    if (this.hasOwnProperty(key)) {
-                        delete this[key];
-                    }
-                }
-            }
-        });
-
-        return function (config, data) {
-            return new DialogData()._updateDialogConfigData(config, data);
-        };
-    }
-]);
-
 // Source: src/services/dialog-manager.js
 mod.provider('triDialogManager', [
     'triDialogConfig',
     function (dialogConfig) {
 
-        var DialogManagerService = function ($root, dialogConfig, dialogData) {
+        var DialogManagerService = function ($log, dialogConfig) {
 
             var DialogManager = function DialogManager() {
                 return angular.extend(this, {
-                    dialogs: []
+                    dialogs: [],
+                    roots: {}
                 });
             };
 
@@ -361,12 +315,43 @@ mod.provider('triDialogManager', [
                     return false;
                 },
 
-                triggerDialog: function (config, data) {
-                    config = config || {};
-                    $root.$emit(
-                        (config.namespace || dialogConfig.mainNamespace) + dialogConfig.eventCore + dialogConfig.eventOpen,
-                        this.registerDialog(dialogData(config, data))
-                    );
+                triggerDialog: function (dialog) {
+                    if (!this.roots.hasOwnProperty(dialog.namespace)) {
+                        $log.error(new Error('TriDialog: rootCtrl ' + dialog.namespace + ' is not registered!'));
+                        return this;
+                    }
+                    this.roots[dialog.namespace].broadcast(dialogConfig.eventOpen, this.registerDialog(dialog));
+                    return this;
+                },
+
+                closeDialog: function (dialog) {
+                    if (!this.roots.hasOwnProperty(dialog.namespace)) {
+                        $log.error(new Error('TriDialog: rootCtrl ' + dialog.namespace + ' is not registered!'));
+                        return this;
+                    }
+                    this.roots[dialog.namespace].broadcast(dialogConfig.eventClose, dialog);
+                    return this;
+                },
+
+                registerRoot: function (ctrl) {
+                    if (!ctrl.namespace) {
+                        $log.error(new Error('TriDialog: rootCtrl has no namespace assigned!'));
+                        return this;
+                    }
+                    if (this.roots.hasOwnProperty(ctrl.namespace)) {
+                        $log.error(new Error('TriDialog: rootCtrl ' + ctrl.namespace + ' already registered!'));
+                        return this;
+                    }
+                    this.roots[ctrl.namespace] = ctrl;
+                    return this;
+                },
+
+                unRegisterRoot: function (ctrl) {
+                    if (!this.roots.hasOwnProperty(ctrl.namespace)) {
+                        $log.error(new Error('TriDialog: rootCtrl ' + ctrl.namespace + ' is not registered!'));
+                        return this;
+                    }
+                    delete this.roots[ctrl.namespace];
                     return this;
                 }
             });
@@ -381,7 +366,7 @@ mod.provider('triDialogManager', [
                 return this;
             },
 
-            $get: ['$rootScope', 'triDialogConfig', 'triDialogData', DialogManagerService]
+            $get: ['$log', 'triDialogConfig', DialogManagerService]
         };
     }
 ]);
@@ -450,6 +435,57 @@ mod.service('triDialogUtilities', [
         });
 
         return new DialogUtilities();
+    }
+]);
+
+// Source: src/services/dialog.js
+mod.factory('triDialog', [
+    '$log',
+    'triDialogConfig',
+    'triDialogManager',
+    function ($log, dialogConfig, dialogManager) {
+
+        var DialogData = function (config, data) {
+            angular.extend(this, {
+                controller: null,
+                controllerAs: null,
+                dialogClass: '',
+                topOffset: null,
+                modal: false,
+                namespace: dialogConfig.mainNamespace,
+                templateUrl: null
+            });
+            if (!config.templateUrl) {
+                $log.error(new Error('triNgDialog.DialogData() - initialData must contain defined "templateUrl"'));
+            }
+            return angular.extend(this, config, {data: data});
+        };
+
+        angular.extend(DialogData.prototype, {
+
+            trigger: function () {
+                dialogManager.triggerDialog(this);
+                return this;
+            },
+
+            close: function () {
+                dialogManager.closeDialog(this);
+                return this;
+            },
+
+            destroy: function () {
+                var key;
+                for (key in this) {
+                    if (this.hasOwnProperty(key)) {
+                        delete this[key];
+                    }
+                }
+            }
+        });
+
+        return function (config, data) {
+            return new DialogData(config, data).trigger();
+        };
     }
 ]);
 
