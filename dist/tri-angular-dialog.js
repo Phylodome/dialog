@@ -5,38 +5,207 @@
 (function (mod) {
 'use strict';
 
-// Source: src/directives/dialogDirective.js
-mod.directive('dialog', [
+// Source: src/directives/dialog-mask.js
+mod.directive('triDialogMask', [
+    '$animate',
+    'triDialogConfig',
+    'triDialogManager',
+    function ($animate, dialogConfig, dialogManager) {
+
+        var postLink = function (scope, element, attrs, rootCtrl, $transclude) {
+            var root = element.parent();
+            var previousElement = null;
+            var currentElement = null;
+
+            var updateZIndex = function (mask) {
+                mask.css('z-index', dialogConfig.baseZindex + dialogManager.dialogs.length * 2 - 1);
+            };
+
+            var update = function () {
+                if (dialogManager.hasAny(rootCtrl.namespace)) {
+                    if (currentElement) {
+                        updateZIndex(currentElement);
+                    } else {
+                        currentElement = $transclude(function (clone) {
+                            $animate.enter(clone, root);
+                            updateZIndex(clone);
+                            if (previousElement) {
+                                previousElement.remove();
+                                previousElement = null;
+                            }
+                        });
+                    }
+                } else if (currentElement) {
+                    $animate.leave(currentElement, function () {
+                        previousElement = null;
+                    });
+                    previousElement = currentElement;
+                    currentElement = null;
+                }
+            };
+
+            scope.$on(rootCtrl.namespace + dialogConfig.eventCore + dialogConfig.eventOpen, update);
+            scope.$on(rootCtrl.namespace + dialogConfig.eventCore + dialogConfig.eventClosing, update);
+
+            $animate.leave(currentElement);
+        };
+
+        return {
+            link: postLink,
+            priority: 100,
+            require: '^triDialogRoot',
+            restrict: 'A',
+            terminal: true,
+            transclude: 'element'
+        };
+    }
+]);
+
+mod.directive('triDialogMask', [
+    'triDialogManager',
+    'triDialogConfig',
+    function (dialogManager, dialogConfig) {
+        var preLink = function (scope, element, attrs, rootCtrl) {
+            element.addClass(rootCtrl.maskClass + ' ' + dialogConfig.maskClass);
+        };
+
+        var postLink = function (scope, element, attrs, rootCtrl) {
+            element.on('click', function () {
+                var upperDialog = dialogManager.getUpperDialog();
+                if (upperDialog && !upperDialog.modal) {
+                    rootCtrl.broadcast(dialogConfig.eventClose, upperDialog);
+                    scope.$digest();
+                }
+            });
+        };
+
+        return {
+            link: {
+                pre: preLink,
+                post: postLink
+            },
+            priority: -100,
+            require: '^triDialogRoot',
+            restrict: 'A'
+        };
+    }
+]);
+
+
+
+
+// Source: src/directives/dialog-root.js
+mod.directive('triDialogRoot', [
+    '$compile',
     '$rootScope',
+    '$document',
+    '$animate',
+    'triDialogConfig',
+    'triDialogManager',
+    function ($compile, $rootScope, $document, $animate, dialogConfig, dialogManager) {
+
+        $document.on('keydown keypress', function (event) {
+            // kind'a imperative, but we do not know if ng-app/$rootElement is on body/html or not
+            var upperDialog;
+            if (event.which === 27 && dialogManager.dialogs.length) {
+                upperDialog = dialogManager.getUpperDialog();
+                $rootScope.$broadcast(
+                    upperDialog.namespace + dialogConfig.eventCore + dialogConfig.eventClose,
+                    upperDialog
+                );
+                $rootScope.$digest();
+            }
+        });
+
+        var controller = function ($scope, $attrs, dialogConfig, dialogManager) {
+            this.namespace = $attrs.triDialogRoot || dialogConfig.mainNamespace;
+            dialogManager.registerRoot(this);
+            $scope.$on('$destroy', angular.bind(this, function () {
+                //noinspection JSPotentiallyInvalidUsageOfThis
+                dialogManager.unRegisterRoot(this);
+            }));
+            return angular.extend(this, {
+                maskClass: this.namespace + '-' + dialogConfig.maskClass,
+                rootClass: this.namespace + '-' + dialogConfig.rootClass,
+
+                broadcast: function (eType, eData) {
+                    //noinspection JSPotentiallyInvalidUsageOfThis
+                    $scope.$broadcast(this.namespace + dialogConfig.eventCore + eType, eData);
+                },
+
+                listen: function (eType, eFn) {
+                    //noinspection JSPotentiallyInvalidUsageOfThis
+                    $scope.$on(this.namespace + dialogConfig.eventCore + eType, eFn);
+                }
+
+            });
+        };
+
+        var postLink = function (scope, element, attrs, dialogRootCtrl) {
+            dialogRootCtrl.listen(dialogConfig.eventOpen, function (e, dialog) {
+                var dialogElement = angular.element('<section tri:dialog="' + dialog.label + '"></section>');
+                $animate.enter(dialogElement, element.addClass(dialogRootCtrl.rootClass));
+                $compile(dialogElement)(scope);
+                (!scope.$$phase) && scope.$digest(); // because user can trigger dialog inside $apply
+            });
+            dialogRootCtrl.listen(dialogConfig.eventClosing, function () {
+                !dialogManager.hasAny(dialogRootCtrl.namespace) && element.removeClass(dialogRootCtrl.rootClass);
+            });
+        };
+
+        var template = function (tElement) {
+            tElement.append('<div tri:dialog-mask></div>');
+        };
+
+        return {
+            controller: ['$scope', '$attrs', 'triDialogConfig', 'triDialogManager', controller],
+            link: postLink,
+            require: 'triDialogRoot',
+            restrict: 'A',
+            template: template
+        };
+    }
+]);
+
+// Source: src/directives/dialog.js
+mod.directive('triDialog', [
     '$http',
     '$animate',
     '$compile',
     '$controller',
     '$templateCache',
-    'dialogManager',
-    function ($root, $http, $animate, $compile, $controller, $templateCache, dialogManager) {
+    'triDialogManager',
+    'triDialogConfig',
+    'triDialogUtilities',
+    function ($http, $animate, $compile, $controller, $templateCache, dialogManager, dialogConfig, dialogUtilities) {
 
-        var link = function (scope, element, attrs) {
+        var postLink = function (scope, element, attrs, dialogRootCtrl) {
 
-            var dialog = dialogManager.dialogs[attrs.dialog];
+            var dialog = dialogManager.dialogs[attrs.triDialog];
 
             var locals = {
+                $dialog: dialog,
                 $data: dialog.data,
                 $scope: scope
             };
 
-            var init = function (innerLink) {
-                var dialogCtrl;
-                if (dialog.controller) {
-                    dialogCtrl = $controller(dialog.controller, locals);
-                    element.data('$ngControllerController', dialogCtrl);
-                    element.children().data('$ngControllerController', dialogCtrl);
-                    if (dialog.controllerAs) {
-                        scope[dialog.controllerAs] = dialogCtrl;
-                    }
+            var dialogCtrl;
+
+            var init = function (element) {
+                var innerLink = $compile(element.contents());
+                if (dialogCtrl) {
+                    element.data('$triDialogController', dialogCtrl);
+                    element.children().data('$triDialogController', dialogCtrl);
                 }
                 innerLink(scope);
             };
+
+            if (dialog.controller) { // TODO: instantiate just before transclude inclusion
+                dialogCtrl = $controller(dialog.controller, locals);
+                if (dialog.controllerAs) {
+                    scope[dialog.controllerAs] = dialogCtrl;
+                }
+            }
 
             $http
                 .get(dialog.templateUrl, {
@@ -44,181 +213,78 @@ mod.directive('dialog', [
                 })
                 .success(function (response) {
                     element.html(response);
-                    init($compile(element.contents()));
-                    scope.$emit('$triNgDialogTemplateLoaded');
+                    init(element);
+                    scope.$emit(dialogConfig.eventPrefix + dialogConfig.eventTemplate + dialogConfig.eventLoaded);
                 })
                 .error(function () {
                     // TODO... Finking what to do here :/
-                    scope.$emit('$triNgDialogTemplateError');
+                    scope.$emit(dialogConfig.eventPrefix + dialogConfig.eventTemplate + dialogConfig.eventError);
                 });
 
-            scope.$emit('$triNgDialogTemplateRequested');
+            scope.$emit(dialogConfig.eventPrefix + dialogConfig.eventTemplate + dialogConfig.eventRequested);
 
-            scope.closeClick = function () {
-                $root.$emit(dialog.namespace + '.dialog.close', dialog);
-            };
-
-            $root.$on(dialog.namespace + '.dialog.close', function (e, closedDialog) {
+            scope.$on(dialog.namespace + dialogConfig.eventCore + dialogConfig.eventClose, function (e, closedDialog) {
                 if (closedDialog.label == dialog.label) {
-                    scope.$destroy();
-                    $animate.leave(element);
+                    $animate.leave(element, function () {
+                        scope.$destroy();
+                        dialog.destroy();
+                        element = dialog = null;
+                    });
+                    dialogManager.unRegisterDialog(dialog.label);
+                    dialogRootCtrl.broadcast(dialogConfig.eventClosing, closedDialog);
                 }
             });
         };
 
+        var compile = function (tElement, tAttrs) {
+            var dialog = dialogManager.dialogs[tAttrs.triDialog];
+            tElement
+                .addClass(dialogConfig.dialogClass + ' ' + dialog.dialogClass)
+                .css({ // TODO do that during transclude inclusion
+                    zIndex: dialogConfig.baseZindex + (dialog.label + 1) * 2,
+                    top: dialogUtilities.getTopOffset(dialog.topOffset)
+                });
+            return postLink;
+        };
+
         return {
+            compile: compile,
+            require: '^triDialogRoot',
             restrict: 'A',
-            link: link,
             scope: true
         };
     }
 ]);
 
-// Source: src/directives/dialogRootDirective.js
-mod.directive('dialogRoot', [
-    '$compile',
-    '$rootScope',
-    '$document',
-    '$animate',
-    'dialogConfig',
-    'dialogManager',
-    'dialogUtilities',
-    function ($compile, $rootScope, $document, $animate, dialogConfig, dialogManager, dialogUtilities) {
-
-        var compile = function (tElement, tAttrs) {
-            var tMask = angular.element('<div />');
-            var namespaceForEvents = tAttrs.dialogRoot || dialogConfig.mainNamespace;
-
-            tElement.append(tMask);
-
-            tMask.addClass(
-                dialogUtilities.extendClass(tAttrs.dialogRoot, dialogConfig.maskClass)
-            );
-
-            tMask.bind('click', function () {
-                var upperDialog = dialogManager.getUpperDialog();
-                if (!upperDialog.modal) {
-                    $rootScope.$emit(dialogUtilities.eventLabel(namespaceForEvents, 'close'), upperDialog);
-                    $rootScope.$digest();
-                }
-            });
-
-            return function (scope, element, attrs) {
-
-                var rootClass = dialogUtilities.extendClass(attrs.dialogRoot, dialogConfig.rootClass);
-
-                var openDialog = function (e, dialog) {
-                    element.addClass(rootClass);
-
-                    $animate.enter(
-                        $compile(dialogUtilities.getElem(dialog))(scope),
-                        element,
-                        tMask
-                    );
-
-                    (!$rootScope.$$phase) && $rootScope.$digest(); // because user can trigger dialog inside $apply
-
-                    dialogUtilities.updateMask(tMask, namespaceForEvents);
-                };
-
-                var closeDialog = function (e, dialog) {
-                    dialogManager.unRegisterDialog(dialog.label);
-                    !dialogManager.hasAny(namespaceForEvents) && element.removeClass(rootClass);
-
-                    dialogUtilities.updateMask(tMask, namespaceForEvents);
-                };
-
-                $rootScope.$on(dialogUtilities.eventLabel(namespaceForEvents, 'open'), openDialog);
-                $rootScope.$on(dialogUtilities.eventLabel(namespaceForEvents, 'close'), closeDialog);
-            };
-        };
-
-        return {
-            restrict: 'A',
-            compile: compile
-        };
-    }
-]);
-
-mod.directive('body', [
-    '$rootScope',
-    '$document',
-    'dialogConfig',
-    'dialogManager',
-    function ($root, $document, dialogConfig, dialogManager) {
-        var link = function postLink() {
-            $document.on('keydown keypress', function (event) {
-                var upperDialog = dialogManager.getUpperDialog();
-                if (event.which === 27 && upperDialog) {
-                    $root.$emit(
-                        (upperDialog.namespace || dialogConfig.mainNamespace) + '.dialog.close',
-                        upperDialog
-                    );
-                    $root.$digest();
-                }
-            });
-        };
-        return {
-            restrict: 'E',
-            link: link
-        };
-    }
-]);
-
-// Source: src/services/dialogConfig.js
-mod.constant('dialogConfig', {
+// Source: src/services/dialog-config.js
+mod.constant('triDialogConfig', {
     baseZindex: 3000,
     rootClass: 'dialog-root',
     maskClass: 'dialog-mask',
     dialogClass: 'dialog',
     mainNamespace: 'main',
-    showClass: 'show' // class added to mask with angular $animate
+    eventCore: 'TriDialog',
+    eventPrefix: 'triDialog',
+    eventOpen: 'Open',
+    eventClosing: 'Closing',
+    eventClose: 'Close',
+    eventLoaded: 'Loaded',
+    eventError: 'Error',
+    eventRequested: 'Requested',
+    eventTemplate: 'Template'
 });
 
-// Source: src/services/dialogDataFactory.js
-mod.factory('dialogData', [
-    '$log',
-    'dialogConfig',
-    function ($log, dialogConfig) {
-
-        var DialogData = function () {
-            return angular.extend(this, {
-                controller: null,
-                controllerAs: null,
-                dialogClass: '',
-                topOffset: null,
-                modal: false,
-                namespace: dialogConfig.mainNamespace,
-                templateUrl: null
-            });
-        };
-
-        angular.extend(DialogData.prototype, {
-            _updateDialogConfigData: function (config, data) {
-                if (!config.templateUrl) {
-                    // TODO: remove and add default template maybe
-                    $log.error(new Error('triNgDialog.DialogData() - initialData must contain defined "templateUrl"'));
-                }
-                return angular.extend(this, config, {data: data});
-            }
-        });
-
-        return function (config, data) {
-            return new DialogData()._updateDialogConfigData(config, data);
-        };
-    }
-]);
-
-// Source: src/services/dialogManagerService.js
-mod.provider('dialogManager', [
-    'dialogConfig',
+// Source: src/services/dialog-manager.js
+mod.provider('triDialogManager', [
+    'triDialogConfig',
     function (dialogConfig) {
 
-        var DialogManagerService = function ($root, dialogConfig, dialogData) {
+        var DialogManagerService = function ($log, dialogConfig) {
 
             var DialogManager = function DialogManager() {
                 return angular.extend(this, {
-                    dialogs: []
+                    dialogs: [],
+                    roots: {}
                 });
             };
 
@@ -249,12 +315,43 @@ mod.provider('dialogManager', [
                     return false;
                 },
 
-                triggerDialog: function (config, data) {
-                    config = config || {};
-                    $root.$emit(
-                        (config.namespace || dialogConfig.mainNamespace) + '.dialog.open',
-                        this.registerDialog(dialogData(config, data))
-                    );
+                triggerDialog: function (dialog) {
+                    if (!this.roots.hasOwnProperty(dialog.namespace)) {
+                        $log.error(new Error('TriDialog: rootCtrl ' + dialog.namespace + ' is not registered!'));
+                        return this;
+                    }
+                    this.roots[dialog.namespace].broadcast(dialogConfig.eventOpen, this.registerDialog(dialog));
+                    return this;
+                },
+
+                closeDialog: function (dialog) {
+                    if (!this.roots.hasOwnProperty(dialog.namespace)) {
+                        $log.error(new Error('TriDialog: rootCtrl ' + dialog.namespace + ' is not registered!'));
+                        return this;
+                    }
+                    this.roots[dialog.namespace].broadcast(dialogConfig.eventClose, dialog);
+                    return this;
+                },
+
+                registerRoot: function (ctrl) {
+                    if (!ctrl.namespace) {
+                        $log.error(new Error('TriDialog: rootCtrl has no namespace assigned!'));
+                        return this;
+                    }
+                    if (this.roots.hasOwnProperty(ctrl.namespace)) {
+                        $log.error(new Error('TriDialog: rootCtrl ' + ctrl.namespace + ' already registered!'));
+                        return this;
+                    }
+                    this.roots[ctrl.namespace] = ctrl;
+                    return this;
+                },
+
+                unRegisterRoot: function (ctrl) {
+                    if (!this.roots.hasOwnProperty(ctrl.namespace)) {
+                        $log.error(new Error('TriDialog: rootCtrl ' + ctrl.namespace + ' is not registered!'));
+                        return this;
+                    }
+                    delete this.roots[ctrl.namespace];
                     return this;
                 }
             });
@@ -269,21 +366,16 @@ mod.provider('dialogManager', [
                 return this;
             },
 
-            $get: ['$rootScope', 'dialogConfig', 'dialogData', DialogManagerService]
+            $get: ['$log', 'triDialogConfig', DialogManagerService]
         };
     }
 ]);
 
-// Source: src/services/dialogUtilitiesService.js
-mod.service('dialogUtilities', [
-    '$animate',
-    'dialogConfig',
-    'dialogManager',
-    function ($animate, dialogConfig, dialogManager) {
-
+// Source: src/services/dialog-utilities.js
+mod.service('triDialogUtilities', [
+    function () {
         var docBody = document.body;
         var docElem = document.documentElement;
-
         var DialogUtilities = function () {};
 
         angular.extend(DialogUtilities.prototype, {
@@ -339,39 +431,61 @@ mod.service('dialogUtilities', [
                 }
                 return _ts + 'px';
 
-            },
-
-            getElem: function (dialog) {
-                return angular
-                    .element('<section dialog="' + dialog.label + '"></section>')
-                    .addClass(dialogConfig.dialogClass + ' ' + dialog.dialogClass)
-                    .css({
-                        zIndex: dialogConfig.baseZindex + (dialog.label + 1) * 2,
-                        top: this.getTopOffset(dialog.topOffset)
-                    });
-            },
-
-            updateMask: function (mask, space) { // TODO: mask should be moved to own directive...
-                if (dialogManager.hasAny(space)) {
-                    mask.css('z-index', dialogConfig.baseZindex + dialogManager.dialogs.length * 2 - 1);
-                    $animate.addClass(mask, dialogConfig.showClass);
-                } else {
-                    $animate.removeClass(mask, dialogConfig.showClass, function () {
-                        mask.removeAttr('style');
-                    });
-                }
-            },
-
-            eventLabel: function (typeAttrValue, eventType) {
-                return typeAttrValue + '.dialog.' + eventType;
-            },
-
-            extendClass: function (namespace, basicClass) {
-                return namespace ? namespace + '-' + basicClass : basicClass;
             }
         });
 
         return new DialogUtilities();
+    }
+]);
+
+// Source: src/services/dialog.js
+mod.factory('triDialog', [
+    '$log',
+    'triDialogConfig',
+    'triDialogManager',
+    function ($log, dialogConfig, dialogManager) {
+
+        var DialogData = function (config, data) {
+            angular.extend(this, {
+                controller: null,
+                controllerAs: null,
+                dialogClass: '',
+                topOffset: null,
+                modal: false,
+                namespace: dialogConfig.mainNamespace,
+                templateUrl: null
+            });
+            if (!config.templateUrl) {
+                $log.error(new Error('triNgDialog.DialogData() - initialData must contain defined "templateUrl"'));
+            }
+            return angular.extend(this, config, {data: data});
+        };
+
+        angular.extend(DialogData.prototype, {
+
+            trigger: function () {
+                dialogManager.triggerDialog(this);
+                return this;
+            },
+
+            close: function () {
+                dialogManager.closeDialog(this);
+                return this;
+            },
+
+            destroy: function () {
+                var key;
+                for (key in this) {
+                    if (this.hasOwnProperty(key)) {
+                        delete this[key];
+                    }
+                }
+            }
+        });
+
+        return function (config, data) {
+            return new DialogData(config, data).trigger();
+        };
     }
 ]);
 

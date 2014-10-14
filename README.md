@@ -12,14 +12,14 @@ Can be triggered from JavaScript:
 ---------------------------------
 
 ```javascript
-dialogManager.triggerDialog(someDialogDataConfig, someDataToBePassedToController);
+triDialog(someTriDialogConfig, someDataToBePassedToController);
 ```
 
 Sample dialog config:
 ---------------------
 
 ```javascript
-someDialogConfig = {
+someTriDialogConfig = {
     controller:    (String),    // angular controller name or constructor
     controllerAs:  (String),    // name of controller to be used in dialog's
     dialogClass:   (String),    // CSS class specific for this dialog
@@ -32,6 +32,18 @@ someDialogConfig = {
 }
 ```
 
+Controller
+----------
+
+Controller passed to configuration has acces to those locals:
+
+```
+{
+    $dialog: dialog, // instance of dialog, has method 'close()'
+    $data: dialog.data // shortcut to 'someDataToBePassedToController'
+}
+```
+
 Other properties are appended to 'data' object in $scope, so you can pass any callbacks or models.
 Also dialog's $scope has 'closeClick' method.
 
@@ -39,8 +51,8 @@ The Dialog Module can be configured globally
 --------------------------------------------
 
 ```
-app.config(['dialogManagerProvider', function (dialogManagerProvider) {
-    dialogManagerProvider.config({
+app.config(['triDialogManagerProvider', function (triDialogManagerProvider) {
+    triDialogManagerProvider.config({
          baseZindex: 3000, // minimum z-index for mask
          rootClass: 'dialog-root', // class base for dialog-root tag (when inner dialogs are active)
          maskClass: 'dialog-mask', // class for mask

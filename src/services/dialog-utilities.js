@@ -1,14 +1,9 @@
 'use strict';
 
-mod.service('dialogUtilities', [
-    '$animate',
-    'dialogConfig',
-    'dialogManager',
-    function ($animate, dialogConfig, dialogManager) {
-
+mod.service('triDialogUtilities', [
+    function () {
         var docBody = document.body;
         var docElem = document.documentElement;
-
         var DialogUtilities = function () {};
 
         angular.extend(DialogUtilities.prototype, {
@@ -64,35 +59,6 @@ mod.service('dialogUtilities', [
                 }
                 return _ts + 'px';
 
-            },
-
-            getElem: function (dialog) {
-                return angular
-                    .element('<section dialog="' + dialog.label + '"></section>')
-                    .addClass(dialogConfig.dialogClass + ' ' + dialog.dialogClass)
-                    .css({
-                        zIndex: dialogConfig.baseZindex + (dialog.label + 1) * 2,
-                        top: this.getTopOffset(dialog.topOffset)
-                    });
-            },
-
-            updateMask: function (mask, space) { // TODO: mask should be moved to own directive...
-                if (dialogManager.hasAny(space)) {
-                    mask.css('z-index', dialogConfig.baseZindex + dialogManager.dialogs.length * 2 - 1);
-                    $animate.addClass(mask, dialogConfig.showClass);
-                } else {
-                    $animate.removeClass(mask, dialogConfig.showClass, function () {
-                        mask.removeAttr('style');
-                    });
-                }
-            },
-
-            eventLabel: function (typeAttrValue, eventType) {
-                return typeAttrValue + '.dialog.' + eventType;
-            },
-
-            extendClass: function (namespace, basicClass) {
-                return namespace ? namespace + '-' + basicClass : basicClass;
             }
         });
 

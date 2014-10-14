@@ -9,12 +9,12 @@ body {
 .dialog-mask {
     background-color: #515a5d;
     bottom: 0;
-    display: none;
     left: 0;
-    opacity: 0;
+    opacity: .9;
     position: fixed;
     right: 0;
     top: 0;
+    z-index: -1;
 }
 
 .dialog-itself {
@@ -36,8 +36,8 @@ body {
  */
 .dialog-itself.ng-enter,
 .dialog-itself.ng-leave.ng-leave-active,
-.dialog-mask.show-add,
-.dialog-mask.show-remove.show-remove-active {
+.dialog-mask.ng-enter,
+.dialog-mask.ng-leave.ng-leave-active {
     opacity: 0;
 }
 
@@ -46,16 +46,9 @@ body {
     opacity: 1;
 }
 
-.dialog-mask.show,
-.dialog-mask.show-remove,
-.dialog-mask.show-add.show-add-active {
+.dialog-mask.ng-leave,
+.dialog-mask.ng-enter.ng-enter-active {
     opacity: .9;
-}
-
-.dialog-mask.show,
-.dialog-mask.show-add,
-.dialog-mask.show-remove {
-    display: block;
 }
 
 /*
