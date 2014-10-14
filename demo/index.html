@@ -1,18 +1,18 @@
 <!DOCTYPE html>
-<html ng-app="demoApp">
+<html ng:app="demoApp">
     <head>
         <title>dialog demo</title>
         <link href="css/dialog.css" rel="stylesheet" />
     </head>
-    <body dialog-root>
+    <body tri:dialog-root>
         <header>
             <h1>AngularJS - triAngular - dialog</h1>
         </header>
-        <ul ng-controller="DialogTriggersList">
-            <li><button ng-click="dialog440()">Trigger 440px wide dialog</button></li>
-            <li><button ng-click="dialog800()">Trigger 800px wide dialog</button></li>
+        <ul ng:controller="DialogTriggersList">
+            <li><button ng:click="dialog440()">Trigger 440px wide dialog</button></li>
+            <li><button ng:click="dialog800()">Trigger 800px wide dialog</button></li>
 
-            <li><button ng-click="dialogFail()">Trigger dialog with bad template url</button></li>
+            <li><button ng:click="dialogFail()">Trigger dialog with bad template url</button></li>
         </ul>
         <footer>
             <small>(d)WTF License</small>

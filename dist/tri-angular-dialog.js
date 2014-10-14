@@ -8,8 +8,8 @@
 // Source: src/directives/dialog-mask.js
 mod.directive('triDialogMask', [
     '$animate',
-    'dialogConfig',
-    'dialogManager',
+    'triDialogConfig',
+    'triDialogManager',
     function ($animate, dialogConfig, dialogManager) {
 
         var postLink = function (scope, element, attrs, rootCtrl, $transclude) {
@@ -53,7 +53,7 @@ mod.directive('triDialogMask', [
         return {
             link: postLink,
             priority: 100,
-            require: '^dialogRoot',
+            require: '^triDialogRoot',
             restrict: 'A',
             terminal: true,
             transclude: 'element'
@@ -62,8 +62,8 @@ mod.directive('triDialogMask', [
 ]);
 
 mod.directive('triDialogMask', [
-    'dialogManager',
-    'dialogConfig',
+    'triDialogManager',
+    'triDialogConfig',
     function (dialogManager, dialogConfig) {
         var preLink = function (scope, element, attrs, rootCtrl) {
             element.addClass(rootCtrl.maskClass + ' ' + dialogConfig.maskClass);
@@ -85,7 +85,7 @@ mod.directive('triDialogMask', [
                 post: postLink
             },
             priority: -100,
-            require: '^dialogRoot',
+            require: '^triDialogRoot',
             restrict: 'A'
         };
     }
@@ -95,13 +95,13 @@ mod.directive('triDialogMask', [
 
 
 // Source: src/directives/dialog-root.js
-mod.directive('dialogRoot', [
+mod.directive('triDialogRoot', [
     '$compile',
     '$rootScope',
     '$document',
     '$animate',
-    'dialogConfig',
-    'dialogManager',
+    'triDialogConfig',
+    'triDialogManager',
     function ($compile, $rootScope, $document, $animate, dialogConfig, dialogManager) {
 
         $document.on('keydown keypress', function (event) {
@@ -115,7 +115,7 @@ mod.directive('dialogRoot', [
         });
 
         var controller = function ($scope, $attrs, dialogConfig) {
-            this.namespace = $attrs.dialogRoot || dialogConfig.mainNamespace;
+            this.namespace = $attrs.triDialogRoot || dialogConfig.mainNamespace;
             return angular.extend(this, {
                 maskClass: this.namespace + '-' + dialogConfig.maskClass,
                 rootClass: this.namespace + '-' + dialogConfig.rootClass,
@@ -135,7 +135,7 @@ mod.directive('dialogRoot', [
 
         var postLink = function (scope, element, attrs, dialogRootCtrl) {
             dialogRootCtrl.listen('open', function (e, dialog) {
-                var dialogElement = angular.element('<section dialog="' + dialog.label + '"></section>');
+                var dialogElement = angular.element('<section tri:dialog="' + dialog.label + '"></section>');
                 $animate.enter(dialogElement, element.addClass(dialogRootCtrl.rootClass));
                 $compile(dialogElement)(scope);
                 (!scope.$$phase) && scope.$digest(); // because user can trigger dialog inside $apply
@@ -150,9 +150,9 @@ mod.directive('dialogRoot', [
         };
 
         return {
-            controller: ['$scope', '$attrs', 'dialogConfig', controller],
+            controller: ['$scope', '$attrs', 'triDialogConfig', controller],
             link: postLink,
-            require: 'dialogRoot',
+            require: 'triDialogRoot',
             restrict: 'A',
             template: template
         };
@@ -160,22 +160,20 @@ mod.directive('dialogRoot', [
 ]);
 
 // Source: src/directives/dialog.js
-mod.directive('dialog', [
+mod.directive('triDialog', [
     '$http',
     '$animate',
     '$compile',
     '$controller',
     '$templateCache',
-    'dialogManager',
-    'dialogConfig',
-    'dialogUtilities',
+    'triDialogManager',
+    'triDialogConfig',
+    'triDialogUtilities',
     function ($http, $animate, $compile, $controller, $templateCache, dialogManager, dialogConfig, dialogUtilities) {
-
-        var preLink = function () {};
 
         var postLink = function (scope, element, attrs, dialogRootCtrl) {
 
-            var dialog = dialogManager.dialogs[attrs.dialog];
+            var dialog = dialogManager.dialogs[attrs.triDialog];
 
             var locals = {
                 $data: dialog.data,
@@ -229,22 +227,19 @@ mod.directive('dialog', [
         };
 
         var compile = function (tElement, tAttrs) {
-            var dialog = dialogManager.dialogs[tAttrs.dialog];
+            var dialog = dialogManager.dialogs[tAttrs.triDialog];
             tElement
                 .addClass(dialogConfig.dialogClass + ' ' + dialog.dialogClass)
                 .css({
                     zIndex: dialogConfig.baseZindex + (dialog.label + 1) * 2,
                     top: dialogUtilities.getTopOffset(dialog.topOffset)
                 });
-            return {
-                pre: preLink,
-                post: postLink
-            };
+            return postLink;
         };
 
         return {
             compile: compile,
-            require: '^dialogRoot',
+            require: '^triDialogRoot',
             restrict: 'A',
             scope: true
         };
@@ -252,7 +247,7 @@ mod.directive('dialog', [
 ]);
 
 // Source: src/services/dialog-config.js
-mod.constant('dialogConfig', {
+mod.constant('triDialogConfig', {
     baseZindex: 3000,
     rootClass: 'dialog-root',
     maskClass: 'dialog-mask',
@@ -261,9 +256,9 @@ mod.constant('dialogConfig', {
 });
 
 // Source: src/services/dialog-data.js
-mod.factory('dialogData', [
+mod.factory('triDialogData', [
     '$log',
-    'dialogConfig',
+    'triDialogConfig',
     function ($log, dialogConfig) {
 
         var DialogData = function () {
@@ -304,8 +299,8 @@ mod.factory('dialogData', [
 ]);
 
 // Source: src/services/dialog-manager.js
-mod.provider('dialogManager', [
-    'dialogConfig',
+mod.provider('triDialogManager', [
+    'triDialogConfig',
     function (dialogConfig) {
 
         var DialogManagerService = function ($root, dialogConfig, dialogData) {
@@ -363,13 +358,13 @@ mod.provider('dialogManager', [
                 return this;
             },
 
-            $get: ['$rootScope', 'dialogConfig', 'dialogData', DialogManagerService]
+            $get: ['$rootScope', 'triDialogConfig', 'triDialogData', DialogManagerService]
         };
     }
 ]);
 
 // Source: src/services/dialog-utilities.js
-mod.service('dialogUtilities', [
+mod.service('triDialogUtilities', [
     function () {
         var docBody = document.body;
         var docElem = document.documentElement;

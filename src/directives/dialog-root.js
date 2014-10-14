@@ -1,12 +1,12 @@
 'use strict';
 
-mod.directive('dialogRoot', [
+mod.directive('triDialogRoot', [
     '$compile',
     '$rootScope',
     '$document',
     '$animate',
-    'dialogConfig',
-    'dialogManager',
+    'triDialogConfig',
+    'triDialogManager',
     function ($compile, $rootScope, $document, $animate, dialogConfig, dialogManager) {
 
         $document.on('keydown keypress', function (event) {
@@ -20,7 +20,7 @@ mod.directive('dialogRoot', [
         });
 
         var controller = function ($scope, $attrs, dialogConfig) {
-            this.namespace = $attrs.dialogRoot || dialogConfig.mainNamespace;
+            this.namespace = $attrs.triDialogRoot || dialogConfig.mainNamespace;
             return angular.extend(this, {
                 maskClass: this.namespace + '-' + dialogConfig.maskClass,
                 rootClass: this.namespace + '-' + dialogConfig.rootClass,
@@ -40,7 +40,7 @@ mod.directive('dialogRoot', [
 
         var postLink = function (scope, element, attrs, dialogRootCtrl) {
             dialogRootCtrl.listen('open', function (e, dialog) {
-                var dialogElement = angular.element('<section dialog="' + dialog.label + '"></section>');
+                var dialogElement = angular.element('<section tri:dialog="' + dialog.label + '"></section>');
                 $animate.enter(dialogElement, element.addClass(dialogRootCtrl.rootClass));
                 $compile(dialogElement)(scope);
                 (!scope.$$phase) && scope.$digest(); // because user can trigger dialog inside $apply
@@ -55,9 +55,9 @@ mod.directive('dialogRoot', [
         };
 
         return {
-            controller: ['$scope', '$attrs', 'dialogConfig', controller],
+            controller: ['$scope', '$attrs', 'triDialogConfig', controller],
             link: postLink,
-            require: 'dialogRoot',
+            require: 'triDialogRoot',
             restrict: 'A',
             template: template
         };

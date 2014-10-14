@@ -1,5 +1,5 @@
 'use strict';
-mod.constant('dialogConfig', {
+mod.constant('triDialogConfig', {
     baseZindex: 3000,
     rootClass: 'dialog-root',
     maskClass: 'dialog-mask',

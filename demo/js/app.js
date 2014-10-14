@@ -2,7 +2,7 @@
     'use strict';
 
     app.config([
-        'dialogManagerProvider',
+        'triDialogManagerProvider',
         function (dialogManagerProvider) {
             dialogManagerProvider.config({
                 rootClass: 'dialog-root',
@@ -26,7 +26,7 @@
 
     app.controller('DialogTriggersList', [
         '$scope',
-        'dialogManager',
+        'triDialogManager',
         function ($scope, dialogManager) {
 
             $scope.dialog440 = function () {

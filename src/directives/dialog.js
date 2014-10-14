@@ -1,21 +1,19 @@
 'use strict';
 
-mod.directive('dialog', [
+mod.directive('triDialog', [
     '$http',
     '$animate',
     '$compile',
     '$controller',
     '$templateCache',
-    'dialogManager',
-    'dialogConfig',
-    'dialogUtilities',
+    'triDialogManager',
+    'triDialogConfig',
+    'triDialogUtilities',
     function ($http, $animate, $compile, $controller, $templateCache, dialogManager, dialogConfig, dialogUtilities) {
-
-        var preLink = function () {};
 
         var postLink = function (scope, element, attrs, dialogRootCtrl) {
 
-            var dialog = dialogManager.dialogs[attrs.dialog];
+            var dialog = dialogManager.dialogs[attrs.triDialog];
 
             var locals = {
                 $data: dialog.data,
@@ -69,22 +67,19 @@ mod.directive('dialog', [
         };
 
         var compile = function (tElement, tAttrs) {
-            var dialog = dialogManager.dialogs[tAttrs.dialog];
+            var dialog = dialogManager.dialogs[tAttrs.triDialog];
             tElement
                 .addClass(dialogConfig.dialogClass + ' ' + dialog.dialogClass)
                 .css({
                     zIndex: dialogConfig.baseZindex + (dialog.label + 1) * 2,
                     top: dialogUtilities.getTopOffset(dialog.topOffset)
                 });
-            return {
-                pre: preLink,
-                post: postLink
-            };
+            return postLink;
         };
 
         return {
             compile: compile,
-            require: '^dialogRoot',
+            require: '^triDialogRoot',
             restrict: 'A',
             scope: true
         };

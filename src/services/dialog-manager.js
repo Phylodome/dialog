@@ -1,6 +1,6 @@
 'use strict';
-mod.provider('dialogManager', [
-    'dialogConfig',
+mod.provider('triDialogManager', [
+    'triDialogConfig',
     function (dialogConfig) {
 
         var DialogManagerService = function ($root, dialogConfig, dialogData) {
@@ -58,7 +58,7 @@ mod.provider('dialogManager', [
                 return this;
             },
 
-            $get: ['$rootScope', 'dialogConfig', 'dialogData', DialogManagerService]
+            $get: ['$rootScope', 'triDialogConfig', 'triDialogData', DialogManagerService]
         };
     }
 ]);

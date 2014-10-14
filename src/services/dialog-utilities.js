@@ -1,6 +1,6 @@
 'use strict';
 
-mod.service('dialogUtilities', [
+mod.service('triDialogUtilities', [
     function () {
         var docBody = document.body;
         var docElem = document.documentElement;

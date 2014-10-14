@@ -1,7 +1,7 @@
 'use strict';
-mod.factory('dialogData', [
+mod.factory('triDialogData', [
     '$log',
-    'dialogConfig',
+    'triDialogConfig',
     function ($log, dialogConfig) {
 
         var DialogData = function () {

@@ -1,8 +1,8 @@
 'use strict';
 mod.directive('triDialogMask', [
     '$animate',
-    'dialogConfig',
-    'dialogManager',
+    'triDialogConfig',
+    'triDialogManager',
     function ($animate, dialogConfig, dialogManager) {
 
         var postLink = function (scope, element, attrs, rootCtrl, $transclude) {
@@ -46,7 +46,7 @@ mod.directive('triDialogMask', [
         return {
             link: postLink,
             priority: 100,
-            require: '^dialogRoot',
+            require: '^triDialogRoot',
             restrict: 'A',
             terminal: true,
             transclude: 'element'
@@ -55,8 +55,8 @@ mod.directive('triDialogMask', [
 ]);
 
 mod.directive('triDialogMask', [
-    'dialogManager',
-    'dialogConfig',
+    'triDialogManager',
+    'triDialogConfig',
     function (dialogManager, dialogConfig) {
         var preLink = function (scope, element, attrs, rootCtrl) {
             element.addClass(rootCtrl.maskClass + ' ' + dialogConfig.maskClass);
@@ -78,7 +78,7 @@ mod.directive('triDialogMask', [
                 post: postLink
             },
             priority: -100,
-            require: '^dialogRoot',
+            require: '^triDialogRoot',
             restrict: 'A'
         };
     }
