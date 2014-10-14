@@ -17,10 +17,10 @@
         '$log',
         '$data', // from 'locals' passed to $controller
         function ($scope, $log, $data) {
-            $scope.$data = $data;
-            $scope.$on('$triNgDialogTemplateRequested', $log.log.bind($log));
-            $scope.$on('$triNgDialogTemplateLoaded', $log.log.bind($log));
-            $scope.$on('$triNgDialogTemplateError', $log.log.bind($log));
+            $scope.$data = this.$data = $data;
+            $scope.$on('triDialogTemplateRequested', $log.log);
+            $scope.$on('triDialogTemplateLoaded', $log.log);
+            $scope.$on('triDialogTemplateError', $log.log);
         }
     ]);
 

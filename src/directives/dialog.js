@@ -23,9 +23,10 @@ mod.directive('triDialog', [
             var init = function (innerLink, element, dialog) {
                 var dialogCtrl;
                 if (dialog.controller) {
+                    // TODO: move it out of here to catch template requested event
                     dialogCtrl = $controller(dialog.controller, locals);
-                    element.data('$ngControllerController', dialogCtrl);
-                    element.children().data('$ngControllerController', dialogCtrl);
+                    element.data('$triDialogController', dialogCtrl);
+                    element.children().data('$triDialogController', dialogCtrl);
                     if (dialog.controllerAs) {
                         scope[dialog.controllerAs] = dialogCtrl;
                     }
@@ -40,20 +41,20 @@ mod.directive('triDialog', [
                 .success(function (response) {
                     element.html(response);
                     init($compile(element.contents()), element, dialog);
-                    scope.$emit('$triNgDialogTemplateLoaded');
+                    scope.$emit(dialogConfig.eventPrefix + dialogConfig.eventTemplate + dialogConfig.eventLoaded);
                 })
                 .error(function () {
                     // TODO... Finking what to do here :/
-                    scope.$emit('$triNgDialogTemplateError');
+                    scope.$emit(dialogConfig.eventPrefix + dialogConfig.eventTemplate + dialogConfig.eventError);
                 });
 
-            scope.$emit('$triNgDialogTemplateRequested');
+            scope.$emit(dialogConfig.eventPrefix + dialogConfig.eventTemplate + dialogConfig.eventRequested);
 
             scope.closeClick = function () {
-                dialogRootCtrl.broadcast('close', dialog);
+                dialogRootCtrl.broadcast(dialogConfig.eventClose, dialog);
             };
 
-            scope.$on(dialog.namespace + '.dialog.close', function (e, closedDialog) {
+            scope.$on(dialog.namespace + dialogConfig.eventCore + dialogConfig.eventClose, function (e, closedDialog) {
                 if (closedDialog.label == dialog.label) {
                     $animate.leave(element, function () {
                         scope.$destroy();
@@ -61,7 +62,7 @@ mod.directive('triDialog', [
                         element = dialog = null;
                     });
                     dialogManager.unRegisterDialog(dialog.label);
-                    dialogRootCtrl.broadcast('closing', closedDialog);
+                    dialogRootCtrl.broadcast(dialogConfig.eventClosing, closedDialog);
                 }
             });
         };

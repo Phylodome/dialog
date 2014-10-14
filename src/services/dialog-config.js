@@ -4,5 +4,14 @@ mod.constant('triDialogConfig', {
     rootClass: 'dialog-root',
     maskClass: 'dialog-mask',
     dialogClass: 'dialog',
-    mainNamespace: 'main'
+    mainNamespace: 'main',
+    eventCore: 'TriDialog',
+    eventPrefix: 'triDialog',
+    eventOpen: 'Open',
+    eventClosing: 'Closing',
+    eventClose: 'Close',
+    eventLoaded: 'Loaded',
+    eventError: 'Error',
+    eventRequested: 'Requested',
+    eventTemplate: 'Template'
 });

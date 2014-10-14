@@ -14,7 +14,10 @@ mod.directive('triDialogRoot', [
             var upperDialog;
             if (event.which === 27 && dialogManager.dialogs.length) {
                 upperDialog = dialogManager.getUpperDialog();
-                $rootScope.$broadcast(upperDialog.namespace + '.dialog.close', upperDialog);
+                $rootScope.$broadcast(
+                    upperDialog.namespace + dialogConfig.eventCore + dialogConfig.eventClose,
+                    upperDialog
+                );
                 $rootScope.$digest();
             }
         });
@@ -27,25 +30,25 @@ mod.directive('triDialogRoot', [
 
                 broadcast: function (eType, eData) {
                     //noinspection JSPotentiallyInvalidUsageOfThis
-                    $scope.$broadcast(this.namespace + '.dialog.' + eType, eData);
+                    $scope.$broadcast(this.namespace + dialogConfig.eventCore + eType, eData);
                 },
 
                 listen: function (eType, eFn) {
                     //noinspection JSPotentiallyInvalidUsageOfThis
-                    $scope.$on(this.namespace + '.dialog.' + eType, eFn);
+                    $scope.$on(this.namespace + dialogConfig.eventCore + eType, eFn);
                 }
 
             });
         };
 
         var postLink = function (scope, element, attrs, dialogRootCtrl) {
-            dialogRootCtrl.listen('open', function (e, dialog) {
+            dialogRootCtrl.listen(dialogConfig.eventOpen, function (e, dialog) {
                 var dialogElement = angular.element('<section tri:dialog="' + dialog.label + '"></section>');
                 $animate.enter(dialogElement, element.addClass(dialogRootCtrl.rootClass));
                 $compile(dialogElement)(scope);
                 (!scope.$$phase) && scope.$digest(); // because user can trigger dialog inside $apply
             });
-            dialogRootCtrl.listen('closing', function () {
+            dialogRootCtrl.listen(dialogConfig.eventClosing, function () {
                 !dialogManager.hasAny(dialogRootCtrl.namespace) && element.removeClass(dialogRootCtrl.rootClass);
             });
         };

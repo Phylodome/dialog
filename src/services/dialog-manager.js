@@ -41,7 +41,7 @@ mod.provider('triDialogManager', [
                 triggerDialog: function (config, data) {
                     config = config || {};
                     $root.$emit(
-                        (config.namespace || dialogConfig.mainNamespace) + '.dialog.open',
+                        (config.namespace || dialogConfig.mainNamespace) + dialogConfig.eventCore + dialogConfig.eventOpen,
                         this.registerDialog(dialogData(config, data))
                     );
                     return this;

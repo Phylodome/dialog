@@ -37,8 +37,8 @@ mod.directive('triDialogMask', [
                 }
             };
 
-            scope.$on(rootCtrl.namespace + '.dialog.open', update);
-            scope.$on(rootCtrl.namespace + '.dialog.closing', update);
+            scope.$on(rootCtrl.namespace + dialogConfig.eventCore + dialogConfig.eventOpen, update);
+            scope.$on(rootCtrl.namespace + dialogConfig.eventCore + dialogConfig.eventClosing, update);
 
             $animate.leave(currentElement);
         };
@@ -66,7 +66,7 @@ mod.directive('triDialogMask', [
             element.on('click', function () {
                 var upperDialog = dialogManager.getUpperDialog();
                 if (upperDialog && !upperDialog.modal) {
-                    rootCtrl.broadcast('close', upperDialog);
+                    rootCtrl.broadcast(dialogConfig.eventClose, upperDialog);
                     scope.$digest();
                 }
             });
