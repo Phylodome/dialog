@@ -7,7 +7,8 @@
             dialogManagerProvider.config({
                 rootClass: 'dialog-root',
                 maskClass: 'dialog-mask',
-                dialogClass: 'dialog-itself'
+                dialogClass: 'dialog-itself',
+                processTopOffset: true
             });
         }
     ]);

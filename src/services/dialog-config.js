@@ -5,6 +5,7 @@ mod.constant('triDialogConfig', {
     maskClass: 'dialog-mask',
     dialogClass: 'dialog',
     mainNamespace: 'main',
+    processTopOffset: false,
     eventCore: 'TriDialog',
     eventPrefix: 'triDialog',
     eventOpen: 'Open',
