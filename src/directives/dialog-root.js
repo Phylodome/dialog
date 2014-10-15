@@ -1,14 +1,15 @@
 'use strict';
 
 mod.directive('triDialogRoot', [
-    '$compile',
     '$rootScope',
     '$document',
-    '$animate',
     'triDialogConfig',
     'triDialogManager',
-    function ($compile, $rootScope, $document, $animate, dialogConfig, dialogManager) {
+    function ($rootScope, $document, dialogConfig, dialogManager) {
 
+
+        // TODO: add some namespaces here and move it somewhere
+        //
         $document.on('keydown keypress', function (event) {
             // kind'a imperative, but we do not know if ng-app/$rootElement is on body/html or not
             var upperDialog;
@@ -21,6 +22,8 @@ mod.directive('triDialogRoot', [
                 $rootScope.$digest();
             }
         });
+        //
+        //
 
         var controller = function ($scope, $attrs, dialogConfig, dialogManager) {
             this.namespace = $attrs.triDialogRoot || dialogConfig.mainNamespace;
@@ -32,6 +35,7 @@ mod.directive('triDialogRoot', [
             return angular.extend(this, {
                 maskClass: this.namespace + '-' + dialogConfig.maskClass,
                 rootClass: this.namespace + '-' + dialogConfig.rootClass,
+                dialogs: {},
 
                 broadcast: function (eType, eData) {
                     //noinspection JSPotentiallyInvalidUsageOfThis
@@ -47,19 +51,17 @@ mod.directive('triDialogRoot', [
         };
 
         var postLink = function (scope, element, attrs, dialogRootCtrl) {
-            dialogRootCtrl.listen(dialogConfig.eventOpen, function (e, dialog) {
-                var dialogElement = angular.element('<section tri:dialog="' + dialog.label + '"></section>');
-                $animate.enter(dialogElement, element.addClass(dialogRootCtrl.rootClass));
-                $compile(dialogElement)(scope);
-                (!scope.$$phase) && scope.$digest(); // because user can trigger dialog inside $apply
+            dialogRootCtrl.listen(dialogConfig.eventOpen, function () {
+                !element.hasClass(dialogRootCtrl.rootClass) && element.addClass(dialogRootCtrl.rootClass);
             });
+
             dialogRootCtrl.listen(dialogConfig.eventClosing, function () {
                 !dialogManager.hasAny(dialogRootCtrl.namespace) && element.removeClass(dialogRootCtrl.rootClass);
             });
         };
 
         var template = function (tElement) {
-            tElement.append('<div tri:dialog-mask></div>');
+            tElement.append('<div tri:dialog-mask/><div tri:dialog/>');
         };
 
         return {
