@@ -24,16 +24,22 @@ function triDialogManipulator($animate, $rootScope, $controller, dialogManager, 
             }
 
             $transcludeFn(dialogScope, function (clone) {
+                var css = {
+                    zIndex: dialogConfig.baseZindex + (dialog.label + 1) * 2
+                };
+
+                /* jshint -W041 */
+                if (dialogConfig.processTopOffset || dialog.topOffset != null) {
+                    css.top = dialogUtilities.getTopOffset(dialog.topOffset);
+                }
+
                 if (dialogCtrl) {
                     clone.data('$triDialogController', dialogCtrl);
                 }
 
                 clone
                     .data('$triDialog', dialog)
-                    .css({
-                        zIndex: dialogConfig.baseZindex + (dialog.label + 1) * 2,
-                        top: dialogUtilities.getTopOffset(dialog.topOffset)
-                    })
+                    .css(css)
                     .addClass(dialogConfig.dialogClass + ' ' + dialog.dialogClass);
 
                 dialogRootCtrl.dialogs[dialog.label] = clone;

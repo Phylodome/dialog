@@ -147,11 +147,13 @@ mod.directive('triDialogRoot', [
 
         var postLink = function (scope, element, attrs, dialogRootCtrl) {
             dialogRootCtrl.listen(dialogConfig.eventOpen, function () {
-                !element.hasClass(dialogRootCtrl.rootClass) && element.addClass(dialogRootCtrl.rootClass);
+                element.addClass(dialogRootCtrl.rootClass + ' ' + dialogConfig.rootClass);
             });
 
             dialogRootCtrl.listen(dialogConfig.eventClosing, function () {
-                !dialogManager.hasAny(dialogRootCtrl.namespace) && element.removeClass(dialogRootCtrl.rootClass);
+                if (!dialogManager.hasAny(dialogRootCtrl.namespace)) {
+                    element.removeClass(dialogRootCtrl.rootClass + ' ' + dialogConfig.rootClass);
+                }
             });
         };
 
@@ -193,16 +195,22 @@ function triDialogManipulator($animate, $rootScope, $controller, dialogManager, 
             }
 
             $transcludeFn(dialogScope, function (clone) {
+                var css = {
+                    zIndex: dialogConfig.baseZindex + (dialog.label + 1) * 2
+                };
+
+                /* jshint -W041 */
+                if (dialogConfig.processTopOffset || dialog.topOffset != null) {
+                    css.top = dialogUtilities.getTopOffset(dialog.topOffset);
+                }
+
                 if (dialogCtrl) {
                     clone.data('$triDialogController', dialogCtrl);
                 }
 
                 clone
                     .data('$triDialog', dialog)
-                    .css({
-                        zIndex: dialogConfig.baseZindex + (dialog.label + 1) * 2,
-                        top: dialogUtilities.getTopOffset(dialog.topOffset)
-                    })
+                    .css(css)
                     .addClass(dialogConfig.dialogClass + ' ' + dialog.dialogClass);
 
                 dialogRootCtrl.dialogs[dialog.label] = clone;
@@ -291,6 +299,7 @@ mod.constant('triDialogConfig', {
     maskClass: 'dialog-mask',
     dialogClass: 'dialog',
     mainNamespace: 'main',
+    processTopOffset: false,
     eventCore: 'TriDialog',
     eventPrefix: 'triDialog',
     eventOpen: 'Open',

@@ -52,11 +52,13 @@ mod.directive('triDialogRoot', [
 
         var postLink = function (scope, element, attrs, dialogRootCtrl) {
             dialogRootCtrl.listen(dialogConfig.eventOpen, function () {
-                !element.hasClass(dialogRootCtrl.rootClass) && element.addClass(dialogRootCtrl.rootClass);
+                element.addClass(dialogRootCtrl.rootClass + ' ' + dialogConfig.rootClass);
             });
 
             dialogRootCtrl.listen(dialogConfig.eventClosing, function () {
-                !dialogManager.hasAny(dialogRootCtrl.namespace) && element.removeClass(dialogRootCtrl.rootClass);
+                if (!dialogManager.hasAny(dialogRootCtrl.namespace)) {
+                    element.removeClass(dialogRootCtrl.rootClass + ' ' + dialogConfig.rootClass);
+                }
             });
         };
 
