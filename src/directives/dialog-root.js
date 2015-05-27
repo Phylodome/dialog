@@ -15,11 +15,13 @@ mod.directive('triDialogRoot', [
             var upperDialog;
             if (event.which === 27 && dialogManager.dialogs.length) {
                 upperDialog = dialogManager.getUpperDialog();
-                $rootScope.$broadcast(
-                    upperDialog.namespace + dialogConfig.eventCore + dialogConfig.eventClose,
-                    upperDialog
-                );
-                $rootScope.$digest();
+                if (!upperDialog.blockedDialog) {
+                    $rootScope.$broadcast(
+                        upperDialog.namespace + dialogConfig.eventCore + dialogConfig.eventClose,
+                        upperDialog
+                    );
+                    $rootScope.$digest();
+                }
             }
         });
         //
