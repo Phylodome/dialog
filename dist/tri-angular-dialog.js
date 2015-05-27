@@ -110,11 +110,13 @@ mod.directive('triDialogRoot', [
             var upperDialog;
             if (event.which === 27 && dialogManager.dialogs.length) {
                 upperDialog = dialogManager.getUpperDialog();
-                $rootScope.$broadcast(
-                    upperDialog.namespace + dialogConfig.eventCore + dialogConfig.eventClose,
-                    upperDialog
-                );
-                $rootScope.$digest();
+                if (!upperDialog.blockedDialog) {
+                    $rootScope.$broadcast(
+                        upperDialog.namespace + dialogConfig.eventCore + dialogConfig.eventClose,
+                        upperDialog
+                    );
+                    $rootScope.$digest();
+                }
             }
         });
         //
@@ -485,6 +487,7 @@ mod.factory('triDialog', [
 
         var DialogData = function (config, data) {
             angular.extend(this, {
+                blockedDialog: false,
                 controller: null,
                 controllerAs: null,
                 dialogClass: '',
@@ -495,6 +498,9 @@ mod.factory('triDialog', [
             });
             if (!config.templateUrl) {
                 $log.error(new Error('triNgDialog.DialogData() - initialData must contain defined "templateUrl"'));
+            }
+            if (config.blockedDialog) {
+                this.modal = true;
             }
             return angular.extend(this, config, {data: data});
         };
