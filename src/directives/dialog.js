@@ -6,40 +6,41 @@ function triDialogManipulator($animate, $rootScope, $controller, dialogManager, 
     var postLink = function (scope, element, attrs, dialogRootCtrl, $transcludeFn) {
 
         dialogRootCtrl.listen(dialogConfig.eventOpen, function (e, dialog) {
-            var dialogScope = $rootScope.$new(); // isolated from other contexts
-            var dialogCtrl;
-            var locals = {
-                $dialog: dialog,
-                $data: dialog.data,
-                $scope: dialogScope
-            };
 
-            if (dialog.controller) {
-                dialogCtrl = $controller(dialog.controller, locals);
+            var setController = function (clone, dialogScope) {
+                var dialogCtrl = $controller(dialog.controller, {
+                    $dialog: dialog,
+                    $data: dialog.data,
+                    $scope: dialogScope
+                });
                 if (dialog.controllerAs) {
                     dialogScope[dialog.controllerAs] = dialogCtrl;
                 }
-            } else {
-                dialogScope.$dialog = dialog;
-            }
+                clone.data('$triDialogController', dialogCtrl);
+            };
 
-            $transcludeFn(dialogScope, function (clone) {
+            var getCss = function () {
                 var css = {
                     zIndex: dialogConfig.baseZindex + (dialog.label + 1) * 2
                 };
-
                 /* jshint -W041 */
                 if (dialogConfig.processTopOffset || dialog.topOffset != null) {
                     css.top = dialogUtilities.getTopOffset(dialog.topOffset);
                 }
+                return css;
+            };
 
-                if (dialogCtrl) {
-                    clone.data('$triDialogController', dialogCtrl);
+            $transcludeFn($rootScope.$new(), function (clone, dialogScope) {
+
+                if (dialog.controller) {
+                    setController(clone, dialogScope);
+                } else {
+                    dialogScope.$dialog = dialog;
                 }
 
                 clone
                     .data('$triDialog', dialog)
-                    .css(css)
+                    .css(getCss())
                     .addClass(dialogConfig.dialogClass + ' ' + dialog.dialogClass);
 
                 dialogRootCtrl.dialogs[dialog.label] = clone;
@@ -113,8 +114,7 @@ function triDialog($log, $http, $compile, $templateCache, dialogConfig) {
     return {
         link: postLink,
         require: '^triDialogRoot',
-        restrict: 'A',
-        scope: true
+        restrict: 'A'
     };
 }
 
