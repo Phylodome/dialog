@@ -1,9 +1,9 @@
 triAngular Dialog
 =================
 
-![bower package 0.3.0-alpha](https://img.shields.io/badge/bower_package-0.3.0--alpha-orange.svg?style=flat)
-![built with gulp](https://img.shields.io/badge/built_with-gulp-lightgrey.svg?style=flat)
-![language typescript](https://img.shields.io/badge/lang-typescript-blue.svg?style=flat)
+![bower package 0.3.0-alpha](https://img.shields.io/badge/bower_package-0.3.0--alpha-orange.svg?style=flat-square)
+![built with gulp](https://img.shields.io/badge/built_with-gulp-lightgrey.svg?style=flat-square)
+![language typescript](https://img.shields.io/badge/lang-typescript-blue.svg??style=flat-square)
 
 AngularJS multi modal dialog module
 
