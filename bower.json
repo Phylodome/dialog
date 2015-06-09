@@ -7,9 +7,9 @@
   ],
   "ignore": [
     "demo/",
-    "tasks/",
+    "gulp/",
     "src/",
-    "Gruntfile.js",
+    "Gulpfile.js",
     "CONTRIBUTING.md",
     "package.json",
     ".gitignore"
