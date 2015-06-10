@@ -64,8 +64,9 @@ declare module tri.dialog {
         status: string;
     }
 
-    interface ITriDialogPromiseFinalisation extends ITriDialogPromiseNotification {
+    interface ITriDialogPromiseFinalisation {
         accepted: boolean;
+        dialog: ITriDialog;
         reason: any;
     }
 

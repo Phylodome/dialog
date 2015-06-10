@@ -77,6 +77,7 @@ module tri.dialog {
                     dialogElementScope = dialogElement.scope();
 
                     $animate.leave(dialogElement, () => {
+                        closedDialog.notify('closed');
                         dialogElementScope.$destroy();
                         dialogElement.removeData().children().removeData();
                         closedDialog.destroy(notification);

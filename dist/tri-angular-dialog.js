@@ -74,14 +74,12 @@ var tri;
                 var postLink = function (scope, element, attrs, rootCtrl) {
                     element.on('click', function () {
                         var upperDialog = dialogManager.getUpperDialog();
-                        var notification = {
-                            accepted: false,
-                            dialog: upperDialog,
-                            status: 'closing',
-                            reason: 'maskClick'
-                        };
                         if (upperDialog && !upperDialog.modal) {
-                            rootCtrl.broadcast(dialogConfig.eventClose, notification);
+                            rootCtrl.broadcast(dialogConfig.eventClose, {
+                                accepted: false,
+                                dialog: upperDialog.notify('closing:Mask'),
+                                reason: 'maskClick'
+                            });
                             scope.$digest();
                         }
                     });
@@ -115,17 +113,14 @@ var tri;
                 $document.on('keydown keypress', function (event) {
                     // kind'a imperative, but we do not know if ng-app/$rootElement is on body/html or not
                     var upperDialog;
-                    var notification;
                     if (event.which === 27 && dialogManager.dialogs.length) {
                         upperDialog = dialogManager.getUpperDialog();
-                        notification = {
-                            accepted: false,
-                            dialog: upperDialog,
-                            status: 'closing',
-                            reason: 'esc'
-                        };
                         if (!upperDialog.blockedDialog) {
-                            $rootScope.$broadcast(upperDialog.namespace + dialogConfig.eventCore + dialogConfig.eventClose, notification);
+                            $rootScope.$broadcast(upperDialog.namespace + dialogConfig.eventCore + dialogConfig.eventClose, {
+                                accepted: false,
+                                dialog: upperDialog.notify('closing:Esc'),
+                                reason: 'esc'
+                            });
                             $rootScope.$digest();
                         }
                     }
@@ -241,6 +236,7 @@ var tri;
                     if (dialogElement && dialogElement.data('$triDialog') === closedDialog) {
                         dialogElementScope = dialogElement.scope();
                         $animate.leave(dialogElement, function () {
+                            closedDialog.notify('closed');
                             dialogElementScope.$destroy();
                             dialogElement.removeData().children().removeData();
                             closedDialog.destroy(notification);
@@ -500,14 +496,12 @@ var tri;
                 return this.close(reason, true);
             };
             DialogData.prototype.close = function (reason, reject) {
-                if (reject === void 0) { reject = false; }
                 this.$_dialogManager.closeDialog({
                     accepted: !reject,
                     dialog: this,
-                    reason: reason,
-                    status: 'closing'
+                    reason: reason
                 });
-                return this.notify('closing');
+                return this.notify('closing' + (reject === undefined ? '' : (reject === true ? ':Cancel' : ':Accept')));
             };
             DialogData.prototype.destroy = function (notification) {
                 var key;

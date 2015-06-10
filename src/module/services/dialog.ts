@@ -59,14 +59,13 @@ module tri.dialog {
             return this.close(reason, true);
         }
 
-        public close(reason?: any, reject = false): ITriDialog {
+        public close(reason?: any, reject?: boolean): ITriDialog {
             this.$_dialogManager.closeDialog({
                 accepted: !reject,
                 dialog: this,
-                reason: reason,
-                status: 'closing'
+                reason: reason
             });
-            return this.notify('closing');
+            return this.notify('closing' + (reject === undefined ? '' : (reject === true ? ':Cancel' : ':Accept')));
         }
 
         public destroy(notification: ITriDialogPromiseFinalisation): void {
