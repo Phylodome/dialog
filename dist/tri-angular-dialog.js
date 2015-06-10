@@ -74,8 +74,14 @@ var tri;
                 var postLink = function (scope, element, attrs, rootCtrl) {
                     element.on('click', function () {
                         var upperDialog = dialogManager.getUpperDialog();
+                        var notification = {
+                            accepted: false,
+                            dialog: upperDialog,
+                            status: 'closing',
+                            reason: 'maskClick'
+                        };
                         if (upperDialog && !upperDialog.modal) {
-                            rootCtrl.broadcast(dialogConfig.eventClose, upperDialog);
+                            rootCtrl.broadcast(dialogConfig.eventClose, notification);
                             scope.$digest();
                         }
                     });
@@ -109,10 +115,17 @@ var tri;
                 $document.on('keydown keypress', function (event) {
                     // kind'a imperative, but we do not know if ng-app/$rootElement is on body/html or not
                     var upperDialog;
+                    var notification;
                     if (event.which === 27 && dialogManager.dialogs.length) {
                         upperDialog = dialogManager.getUpperDialog();
+                        notification = {
+                            accepted: false,
+                            dialog: upperDialog,
+                            status: 'closing',
+                            reason: 'esc'
+                        };
                         if (!upperDialog.blockedDialog) {
-                            $rootScope.$broadcast(upperDialog.namespace + dialogConfig.eventCore + dialogConfig.eventClose, upperDialog);
+                            $rootScope.$broadcast(upperDialog.namespace + dialogConfig.eventCore + dialogConfig.eventClose, notification);
                             $rootScope.$digest();
                         }
                     }
@@ -174,9 +187,11 @@ var tri;
     var dialog;
     (function (dialog_1) {
         'use strict';
-        triDialogManipulator.$inject =
-            ['$animate', '$rootScope', '$controller', 'triDialogManager', 'triDialogConfig', 'triDialogUtilities'];
-        function triDialogManipulator($animate, $rootScope, $controller, dialogManager, dialogConfig, dialogUtilities) {
+        triDialogManipulator.$inject = [
+            '$animate', '$rootScope', '$controller', '$timeout',
+            'triDialogManager', 'triDialogConfig', 'triDialogUtilities'
+        ];
+        function triDialogManipulator($animate, $rootScope, $controller, $timeout, dialogManager, dialogConfig, dialogUtilities) {
             var postLink = function (scope, element, attrs, dialogRootCtrl, $transcludeFn) {
                 dialogRootCtrl.listen(dialogConfig.eventOpen, function (e, dialog) {
                     var setController = function (clone, dialogScope) {
@@ -211,10 +226,16 @@ var tri;
                             .css(getCss())
                             .addClass(dialogConfig.dialogClass + ' ' + dialog.dialogClass);
                         dialogRootCtrl.dialogs[dialog.label] = clone;
-                        $animate.enter(clone, element.parent(), element);
+                        $timeout(function () {
+                            dialog.notify('opening');
+                        }, 1);
+                        $animate.enter(clone, element.parent(), element, function () {
+                            dialog.notify('open');
+                        });
                     });
                 });
-                dialogRootCtrl.listen(dialogConfig.eventClose, function (e, closedDialog) {
+                dialogRootCtrl.listen(dialogConfig.eventClose, function (e, notification) {
+                    var closedDialog = notification.dialog;
                     var dialogElement = dialogRootCtrl.dialogs[closedDialog.label];
                     var dialogElementScope;
                     if (dialogElement && dialogElement.data('$triDialog') === closedDialog) {
@@ -222,7 +243,7 @@ var tri;
                         $animate.leave(dialogElement, function () {
                             dialogElementScope.$destroy();
                             dialogElement.removeData().children().removeData();
-                            closedDialog.destroy();
+                            closedDialog.destroy(notification);
                             closedDialog = dialogElement = null;
                         });
                         delete dialogRootCtrl.dialogs[closedDialog.label];
@@ -245,11 +266,9 @@ var tri;
             var postLink = function (scope, element) {
                 var dialog = element.data('$triDialog');
                 var dialogCtrl = element.data('$triDialogController');
-                $http
-                    .get(dialog.templateUrl, {
+                $http.get(dialog.templateUrl, {
                     cache: $templateCache
-                })
-                    .success(function (response) {
+                }).success(function (response) {
                     var innerLink;
                     element.html(response);
                     innerLink = $compile(element.contents());
@@ -257,10 +276,11 @@ var tri;
                         element.children().data('$triDialogController', dialogCtrl);
                     }
                     innerLink(scope);
+                    dialog.notify('templateLoaded');
                     scope.$broadcast(dialogConfig.eventPrefix + dialogConfig.eventTemplate + dialogConfig.eventLoaded);
-                })
-                    .error(function () {
+                }).error(function () {
                     scope.$broadcast(dialogConfig.eventPrefix + dialogConfig.eventTemplate + dialogConfig.eventError);
+                    dialog.notify('templateError');
                     $log.error(new Error('triDialog: could not load template!'));
                 });
                 scope.$broadcast(dialogConfig.eventPrefix + dialogConfig.eventTemplate + dialogConfig.eventRequested);
@@ -339,12 +359,12 @@ var tri;
                 this.roots[dialog.namespace].broadcast(this.$_dialogConfig.eventOpen, this.registerDialog(dialog));
                 return this;
             };
-            DialogManagerService.prototype.closeDialog = function (dialog) {
-                if (!this.roots.hasOwnProperty(dialog.namespace)) {
-                    this.$_$log.error(new Error('TriDialog: rootCtrl ' + dialog.namespace + ' is not registered!'));
+            DialogManagerService.prototype.closeDialog = function (notification) {
+                if (!this.roots.hasOwnProperty(notification.dialog.namespace)) {
+                    this.$_$log.error(new Error('TriDialog: rootCtrl ' + notification.dialog.namespace + ' is not registered!'));
                     return this;
                 }
-                this.roots[dialog.namespace].broadcast(this.$_dialogConfig.eventClose, dialog);
+                this.roots[notification.dialog.namespace].broadcast(this.$_dialogConfig.eventClose, notification);
                 return this;
             };
             DialogManagerService.prototype.registerRoot = function (ctrl) {
@@ -369,7 +389,9 @@ var tri;
             };
             return DialogManagerService;
         })();
-        dialog_1.mod.provider('triDialogManager', ['triDialogConfig', function (triDialogConfig) { return ({
+        dialog_1.mod.provider('triDialogManager', [
+            'triDialogConfig',
+            function (triDialogConfig) { return ({
                 config: function (cfg) {
                     angular.extend(triDialogConfig, cfg);
                     return this;
@@ -381,7 +403,8 @@ var tri;
                         });
                         return new DialogManagerService();
                     }]
-            }); }]);
+            }); }
+        ]);
     })(dialog = tri.dialog || (tri.dialog = {}));
 })(tri || (tri = {}));
 
@@ -458,27 +481,51 @@ var tri;
                     topOffset: null,
                     modal: false,
                     namespace: this.$_dialogConfig.mainNamespace,
-                    templateUrl: null
+                    templateUrl: null,
+                    $_deferred: this.$_$q.defer()
                 });
                 if (!config.templateUrl) {
                     this.$_$log.error(new Error('triNgDialog.DialogData() - initialData must contain defined "templateUrl"'));
                 }
-                if (config.blockedDialog) {
-                    this.modal = true;
-                }
-                angular.extend(this, config, { data: data });
+                angular.extend(this, config, {
+                    data: data,
+                    modal: config.blockedDialog || config.modal || this.modal,
+                    promise: this.$_deferred.promise
+                });
             }
-            DialogData.prototype.close = function () {
-                this.$_dialogManager.closeDialog(this);
-                return this;
+            DialogData.prototype.accept = function (reason) {
+                return this.close(reason, false);
             };
-            DialogData.prototype.destroy = function () {
+            DialogData.prototype.cancel = function (reason) {
+                return this.close(reason, true);
+            };
+            DialogData.prototype.close = function (reason, reject) {
+                if (reject === void 0) { reject = false; }
+                this.$_dialogManager.closeDialog({
+                    accepted: !reject,
+                    dialog: this,
+                    reason: reason,
+                    status: 'closing'
+                });
+                return this.notify('closing');
+            };
+            DialogData.prototype.destroy = function (notification) {
                 var key;
+                if (notification.accepted) {
+                    this.$_deferred.resolve(notification.reason);
+                }
+                else {
+                    this.$_deferred.reject(notification.reason);
+                }
                 for (key in this) {
                     if (this.hasOwnProperty(key)) {
                         delete this[key];
                     }
                 }
+            };
+            DialogData.prototype.notify = function (status) {
+                this.$_deferred.notify({ dialog: this, status: status });
+                return this;
             };
             DialogData.prototype.trigger = function () {
                 this.$_dialogManager.triggerDialog(this);
@@ -488,11 +535,13 @@ var tri;
         })();
         dialog.mod.factory('triDialog', [
             '$log',
+            '$q',
             'triDialogConfig',
             'triDialogManager',
-            function ($log, dialogConfig, dialogManager) {
+            function ($log, $q, dialogConfig, dialogManager) {
                 angular.extend(DialogData.prototype, {
                     $_$log: $log,
+                    $_$q: $q,
                     $_dialogConfig: dialogConfig,
                     $_dialogManager: dialogManager
                 });

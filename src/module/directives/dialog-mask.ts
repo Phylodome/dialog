@@ -74,8 +74,14 @@ module tri.dialog {
             var postLink = function (scope, element, attrs, rootCtrl) {
                 element.on('click', function () {
                     var upperDialog = dialogManager.getUpperDialog();
+                    var notification: ITriDialogPromiseNotification = {
+                        accepted: false,
+                        dialog: upperDialog,
+                        status: 'closing',
+                        reason: 'maskClick'
+                    };
                     if (upperDialog && !upperDialog.modal) {
-                        rootCtrl.broadcast(dialogConfig.eventClose, upperDialog);
+                        rootCtrl.broadcast(dialogConfig.eventClose, notification);
                         scope.$digest();
                     }
                 });

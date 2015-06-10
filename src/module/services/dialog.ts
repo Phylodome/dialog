@@ -15,12 +15,17 @@ module tri.dialog {
         public namespace: string;
         public templateUrl: string;
         public data: any;
+        public promise: ng.IPromise<any>;
+
+        private $_deferred: ng.IDeferred<any>;
 
         private $_$log: ng.ILogService;
+        private $_$q: ng.IQService;
         private $_dialogConfig: ITriDialogBaseConfig;
         private $_dialogManager: ITriDialogManagerService;
 
         constructor(config: ITriDialogConfig, data?: any) {
+
             angular.extend(this, {
                 blockedDialog: false,
                 controller: null,
@@ -29,31 +34,58 @@ module tri.dialog {
                 topOffset: null,
                 modal: false,
                 namespace: this.$_dialogConfig.mainNamespace,
-                templateUrl: null
+                templateUrl: null,
+                $_deferred: this.$_$q.defer()
             });
+
             if (!config.templateUrl) {
                 this.$_$log.error(
                     new Error('triNgDialog.DialogData() - initialData must contain defined "templateUrl"')
                 );
             }
-            if (config.blockedDialog) {
-                this.modal = true;
-            }
-            angular.extend(this, config, {data: data});
+            angular.extend(this, config, {
+                data: data,
+                modal: config.blockedDialog || config.modal || this.modal,
+                promise: this.$_deferred.promise
+            });
         }
 
-        public close(): ITriDialog {
-            this.$_dialogManager.closeDialog(this);
-            return this;
+
+        public accept(reason?: any): ITriDialog {
+            return this.close(reason, false);
         }
 
-        public destroy(): void {
+        public cancel(reason?: any): ITriDialog {
+            return this.close(reason, true);
+        }
+
+        public close(reason?: any, reject = false): ITriDialog {
+            this.$_dialogManager.closeDialog({
+                accepted: !reject,
+                dialog: this,
+                reason: reason,
+                status: 'closing'
+            });
+            return this.notify('closing');
+        }
+
+        public destroy(notification: ITriDialogPromiseFinalisation): void {
             var key;
+            if (notification.accepted) {
+                this.$_deferred.resolve(notification.reason);
+            } else {
+                this.$_deferred.reject(notification.reason);
+            }
             for (key in this) {
                 if (this.hasOwnProperty(key)) {
                     delete this[key];
                 }
             }
+        }
+
+        public notify(status: string): ITriDialog {
+            this.$_deferred.notify({dialog: this, status: status});
+            return this;
         }
 
         public trigger(): ITriDialog {
@@ -65,15 +97,18 @@ module tri.dialog {
 
     mod.factory('triDialog', [
         '$log',
+        '$q',
         'triDialogConfig',
         'triDialogManager',
         function (
             $log: ng.ILogService,
+            $q: ng.IQService,
             dialogConfig: ITriDialogBaseConfig,
             dialogManager: ITriDialogManagerService
         ): ITriDialogService {
             angular.extend(DialogData.prototype, {
                 $_$log: $log,
+                $_$q: $q,
                 $_dialogConfig: dialogConfig,
                 $_dialogManager: dialogManager
             });

@@ -50,9 +50,23 @@ declare module tri.dialog {
         namespace: string;
         templateUrl: string;
         data: any;
-        close(): ITriDialog;
-        destroy(): void;
+        promise: ng.IPromise<any>;
+        close(reason?: any, reject?: boolean): ITriDialog;
+        accept(reason?: any): ITriDialog;
+        cancel(reason?: any): ITriDialog;
+        destroy(notification: ITriDialogPromiseFinalisation): void;
+        notify(status: string): ITriDialog;
         trigger(): ITriDialog;
+    }
+
+    interface ITriDialogPromiseNotification {
+        dialog: ITriDialog;
+        status: string;
+    }
+
+    interface ITriDialogPromiseFinalisation extends ITriDialogPromiseNotification {
+        accepted: boolean;
+        reason: any;
     }
 
     interface ITriDialogRootCtrl {
@@ -92,7 +106,7 @@ declare module tri.dialog {
         registerDialog(dialog: ITriDialog): ITriDialog;
         unRegisterDialog(label: number): boolean;
         triggerDialog(dialog: ITriDialog): ITriDialogManagerService;
-        closeDialog(dialog: ITriDialog): ITriDialogManagerService;
+        closeDialog(notification: ITriDialogPromiseFinalisation): ITriDialogManagerService;
         registerRoot(ctrl: ITriDialogRootCtrl): ITriDialogManagerService;
         unRegisterRoot(ctrl: ITriDialogRootCtrl): ITriDialogManagerService;
     }

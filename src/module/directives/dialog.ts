@@ -3,12 +3,15 @@ module tri.dialog {
 
     'use strict';
 
-    triDialogManipulator.$inject =
-        ['$animate', '$rootScope', '$controller', 'triDialogManager', 'triDialogConfig', 'triDialogUtilities'];
+    triDialogManipulator.$inject = [
+        '$animate', '$rootScope', '$controller', '$timeout',
+        'triDialogManager', 'triDialogConfig', 'triDialogUtilities'
+    ];
     function triDialogManipulator(
         $animate: ng.IAnimateService,
         $rootScope: ng.IRootScopeService,
         $controller: ng.IControllerService,
+        $timeout: ng.ITimeoutService,
         dialogManager: ITriDialogManagerService,
         dialogConfig: ITriDialogBaseConfig,
         dialogUtilities: ITriDialogUtilitiesService
@@ -16,7 +19,7 @@ module tri.dialog {
 
         var postLink = (scope, element, attrs, dialogRootCtrl, $transcludeFn) => {
 
-            dialogRootCtrl.listen(dialogConfig.eventOpen, function (e, dialog) {
+            dialogRootCtrl.listen(dialogConfig.eventOpen, function (e, dialog: ITriDialog) {
 
                 var setController = (clone, dialogScope) => {
                     var dialogCtrl = $controller(dialog.controller, {
@@ -54,11 +57,19 @@ module tri.dialog {
                         .addClass(dialogConfig.dialogClass + ' ' + dialog.dialogClass);
 
                     dialogRootCtrl.dialogs[dialog.label] = clone;
-                    $animate.enter(clone, element.parent(), element);
+
+                    $timeout(() => {
+                        dialog.notify('opening');
+                    }, 1);
+
+                    $animate.enter(clone, element.parent(), element, () => {
+                        dialog.notify('open');
+                    });
                 });
             });
 
-            dialogRootCtrl.listen(dialogConfig.eventClose, (e, closedDialog) => {
+            dialogRootCtrl.listen(dialogConfig.eventClose, (e, notification: ITriDialogPromiseFinalisation) => {
+                var closedDialog: ITriDialog = notification.dialog;
                 var dialogElement = dialogRootCtrl.dialogs[closedDialog.label];
                 var dialogElementScope;
 
@@ -68,7 +79,7 @@ module tri.dialog {
                     $animate.leave(dialogElement, () => {
                         dialogElementScope.$destroy();
                         dialogElement.removeData().children().removeData();
-                        closedDialog.destroy();
+                        closedDialog.destroy(notification);
                         closedDialog = dialogElement = null;
                     });
 
@@ -100,30 +111,26 @@ module tri.dialog {
 
         var postLink = (scope, element) => {
 
-            var dialog = element.data('$triDialog');
+            var dialog: ITriDialog = element.data('$triDialog');
             var dialogCtrl = element.data('$triDialogController');
 
-            $http
-                .get(dialog.templateUrl, {
-                    cache: $templateCache
-                })
-                .success((response) => {
-                    var innerLink;
-
-                    element.html(response);
-                    innerLink = $compile(element.contents());
-
-                    if (dialogCtrl) {
-                        element.children().data('$triDialogController', dialogCtrl);
-                    }
-
-                    innerLink(scope);
-                    scope.$broadcast(dialogConfig.eventPrefix + dialogConfig.eventTemplate + dialogConfig.eventLoaded);
-                })
-                .error(() => {
-                    scope.$broadcast(dialogConfig.eventPrefix + dialogConfig.eventTemplate + dialogConfig.eventError);
-                    $log.error(new Error('triDialog: could not load template!'));
-                });
+            $http.get(dialog.templateUrl, {
+                cache: $templateCache
+            }).success((response) => {
+                var innerLink;
+                element.html(response);
+                innerLink = $compile(element.contents());
+                if (dialogCtrl) {
+                    element.children().data('$triDialogController', dialogCtrl);
+                }
+                innerLink(scope);
+                dialog.notify('templateLoaded');
+                scope.$broadcast(dialogConfig.eventPrefix + dialogConfig.eventTemplate + dialogConfig.eventLoaded);
+            }).error(() => {
+                scope.$broadcast(dialogConfig.eventPrefix + dialogConfig.eventTemplate + dialogConfig.eventError);
+                dialog.notify('templateError');
+                $log.error(new Error('triDialog: could not load template!'));
+            });
 
             scope.$broadcast(dialogConfig.eventPrefix + dialogConfig.eventTemplate + dialogConfig.eventRequested);
 

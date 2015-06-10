@@ -19,12 +19,19 @@ module tri.dialog {
             $document.on('keydown keypress', function (event) {
                 // kind'a imperative, but we do not know if ng-app/$rootElement is on body/html or not
                 var upperDialog: ITriDialog;
+                var notification: ITriDialogPromiseNotification;
                 if (event.which === 27 && dialogManager.dialogs.length) {
                     upperDialog = dialogManager.getUpperDialog();
+                    notification = {
+                        accepted: false,
+                        dialog: upperDialog,
+                        status: 'closing',
+                        reason: 'esc'
+                    };
                     if (!upperDialog.blockedDialog) {
                         $rootScope.$broadcast(
                             upperDialog.namespace + dialogConfig.eventCore + dialogConfig.eventClose,
-                            upperDialog
+                            notification
                         );
                         $rootScope.$digest();
                     }

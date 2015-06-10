@@ -43,12 +43,14 @@ module tri.dialog {
             return this;
         }
 
-        closeDialog(dialog: ITriDialog): ITriDialogManagerService {
-            if (!this.roots.hasOwnProperty(dialog.namespace)) {
-                this.$_$log.error(new Error('TriDialog: rootCtrl ' + dialog.namespace + ' is not registered!'));
+        closeDialog(notification: ITriDialogPromiseFinalisation): ITriDialogManagerService {
+            if (!this.roots.hasOwnProperty(notification.dialog.namespace)) {
+                this.$_$log.error(
+                    new Error('TriDialog: rootCtrl ' + notification.dialog.namespace + ' is not registered!')
+                );
                 return this;
             }
-            this.roots[dialog.namespace].broadcast(this.$_dialogConfig.eventClose, dialog);
+            this.roots[notification.dialog.namespace].broadcast(this.$_dialogConfig.eventClose, notification);
             return this;
         }
 
@@ -75,18 +77,24 @@ module tri.dialog {
         }
     }
 
-    mod.provider('triDialogManager', ['triDialogConfig', (triDialogConfig: ITriDialogBaseConfig) => ({
-        config(cfg) {
-            angular.extend(triDialogConfig, cfg);
-            return this;
-        },
-        $get: ['$log', 'triDialogConfig', ($log: ng.ILogService, triDialogConfig: ITriDialogBaseConfig) => {
-            angular.extend(DialogManagerService.prototype, {
-                $_$log: $log,
-                $_dialogConfig: triDialogConfig
-            });
-            return new DialogManagerService();
-        }]
-    })]);
+    mod.provider('triDialogManager', [
+        'triDialogConfig',
+        (triDialogConfig: ITriDialogBaseConfig): ITriDialogManagerProvider => ({
+            config(cfg) {
+                angular.extend(triDialogConfig, cfg);
+                return this;
+            },
+            $get: ['$log', 'triDialogConfig', (
+                $log: ng.ILogService,
+                triDialogConfig: ITriDialogBaseConfig
+            ): ITriDialogManagerService => {
+                angular.extend(DialogManagerService.prototype, {
+                    $_$log: $log,
+                    $_dialogConfig: triDialogConfig
+                });
+                return new DialogManagerService();
+            }]
+        })
+    ]);
 
 }
