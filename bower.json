@@ -1,15 +1,16 @@
 {
   "name": "tri-angular-dialog",
-  "version": "0.2.9",
+  "version": "0.3.0-beta",
   "main": [
+    "dist/*.d.ts",
     "dist/*.js",
     "dist/*.map"
   ],
   "ignore": [
     "demo/",
-    "tasks/",
+    "gulp/",
     "src/",
-    "Gruntfile.js",
+    "Gulpfile.js",
     "CONTRIBUTING.md",
     "package.json",
     ".gitignore"
