@@ -103,6 +103,8 @@ declare module tri.dialog {
         dialogs: Array<ITriDialog>;
         roots: {[namespace: string]: ITriDialogRootCtrl};
         hasAny(namespace: string): boolean;
+        hasRoot(namespace: string): boolean;
+        getRoot(namespace: string): ITriDialogRootCtrl;
         getUpperDialog(): ITriDialog;
         registerDialog(dialog: ITriDialog): ITriDialog;
         unRegisterDialog(label: number): boolean;

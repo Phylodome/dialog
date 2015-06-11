@@ -137,17 +137,16 @@ var tri;
         dialog.mod.run([
             '$rootScope',
             '$document',
-            'triDialogConfig',
             'triDialogManager',
-            function ($rootScope, $document, dialogConfig, dialogManager) {
+            function ($rootScope, $document, dialogManager) {
                 // TODO: add some namespaces
                 $document.on('keydown keypress', function (event) {
                     // kind'a imperative, but we do not know if ng-app/$rootElement is on body/html or not
                     var upperDialog;
                     if (event.which === 27 && dialogManager.dialogs.length) {
                         upperDialog = dialogManager.getUpperDialog();
-                        if (!upperDialog.blockedDialog) {
-                            $rootScope.$broadcast(upperDialog.namespace + dialogConfig.eventCore + dialogConfig.eventClose, {
+                        if (!upperDialog.blockedDialog && dialogManager.hasRoot(upperDialog.namespace)) {
+                            dialogManager.getRoot(upperDialog.namespace).broadcast(dialog.conf.eventClose, {
                                 accepted: false,
                                 dialog: upperDialog.notify(dialog.noty.ClosingEsc),
                                 reason: 'esc'
@@ -158,38 +157,33 @@ var tri;
                 });
             }
         ]);
-        dialog.mod.directive('triDialogRoot', [
-            'triDialogConfig',
-            'triDialogManager',
-            function (dialogConfig, dialogManager) {
-                var controller = function ($scope, $attrs, dialogConfig, dialogManager) {
-                    this.namespace = $attrs.triDialogRoot || dialogConfig.mainNamespace;
+        dialog.mod.directive('triDialogRoot', ['triDialogManager', function (dialogManager) {
+                var controller = function ($scope, $attrs, dialogManager) {
+                    var _this = this;
+                    this.namespace = $attrs.triDialogRoot || dialog.conf.mainNamespace;
                     dialogManager.registerRoot(this);
-                    $scope.$on('$destroy', angular.bind(this, function () {
-                        //noinspection JSPotentiallyInvalidUsageOfThis
-                        dialogManager.unRegisterRoot(this);
-                    }));
-                    return angular.extend(this, {
-                        maskClass: this.namespace + '-' + dialogConfig.maskClass,
-                        rootClass: this.namespace + '-' + dialogConfig.rootClass,
+                    $scope.$on('$destroy', function () {
+                        dialogManager.unRegisterRoot(_this);
+                    });
+                    angular.extend(this, {
+                        maskClass: this.namespace + '-' + dialog.conf.maskClass,
+                        rootClass: this.namespace + '-' + dialog.conf.rootClass,
                         dialogs: {},
                         broadcast: function (eType, eData) {
-                            //noinspection JSPotentiallyInvalidUsageOfThis
-                            $scope.$broadcast(this.namespace + dialogConfig.eventCore + eType, eData);
+                            $scope.$broadcast(this.namespace + dialog.conf.eventCore + eType, eData);
                         },
                         listen: function (eType, eFn) {
-                            //noinspection JSPotentiallyInvalidUsageOfThis
-                            $scope.$on(this.namespace + dialogConfig.eventCore + eType, eFn);
+                            $scope.$on(this.namespace + dialog.conf.eventCore + eType, eFn);
                         }
                     });
                 };
                 var postLink = function (scope, element, attrs, dialogRootCtrl) {
-                    dialogRootCtrl.listen(dialogConfig.eventOpen, function () {
-                        element.addClass(dialogRootCtrl.rootClass + ' ' + dialogConfig.rootClass);
+                    dialogRootCtrl.listen(dialog.conf.eventOpen, function () {
+                        element.addClass(dialog.conf.rootClass + ' ' + dialog.conf.rootClass);
                     });
-                    dialogRootCtrl.listen(dialogConfig.eventClosing, function () {
+                    dialogRootCtrl.listen(dialog.conf.eventClosing, function () {
                         if (!dialogManager.hasAny(dialogRootCtrl.namespace)) {
-                            element.removeClass(dialogRootCtrl.rootClass + ' ' + dialogConfig.rootClass);
+                            element.removeClass(dialogRootCtrl.rootClass + ' ' + dialog.conf.rootClass);
                         }
                     });
                 };
@@ -197,14 +191,13 @@ var tri;
                     tElement.append('<div tri:dialog-mask/><div tri:dialog/>');
                 };
                 return {
-                    controller: ['$scope', '$attrs', 'triDialogConfig', 'triDialogManager', controller],
+                    controller: ['$scope', '$attrs', 'triDialogManager', controller],
                     link: postLink,
                     require: 'triDialogRoot',
                     restrict: 'A',
                     template: template
                 };
-            }
-        ]);
+            }]);
     })(dialog = tri.dialog || (tri.dialog = {}));
 })(tri || (tri = {}));
 
@@ -337,6 +330,12 @@ var tri;
             }
             DialogManagerService.prototype.hasAny = function (namespace) {
                 return this.dialogs.some(function (dialog) { return dialog.namespace === namespace; });
+            };
+            DialogManagerService.prototype.hasRoot = function (namespace) {
+                return this.roots.hasOwnProperty(namespace);
+            };
+            DialogManagerService.prototype.getRoot = function (namespace) {
+                return this.roots[namespace];
             };
             DialogManagerService.prototype.getUpperDialog = function () {
                 var count = this.dialogs.length;

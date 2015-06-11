@@ -15,6 +15,14 @@ module tri.dialog {
             return this.dialogs.some((dialog) => dialog.namespace === namespace);
         }
 
+        hasRoot(namespace: string): boolean {
+            return this.roots.hasOwnProperty(namespace);
+        }
+
+        getRoot(namespace: string): ITriDialogRootCtrl {
+            return this.roots[namespace];
+        }
+
         getUpperDialog(): ITriDialog {
             var count = this.dialogs.length;
             return count > 0 && this.dialogs[count - 1];
