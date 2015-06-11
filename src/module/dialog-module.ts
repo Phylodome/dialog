@@ -34,6 +34,8 @@ module tri.dialog {
         eventTemplate: 'Template'
     };
 
+    export var definitions: {[label: string]: ITriDialogConfig} = {};
+
     export var mod = angular
         .module('triNgDialog', ['ngAnimate'])
         .constant('triDialogNoty', noty)

@@ -8,9 +8,6 @@ module tri.dialog {
         public dialogs: Array<ITriDialog> = [];
         public roots: {[namespace: string]: ITriDialogRootCtrl} = {};
 
-        private $_$log: ng.ILogService;
-        private $_dialogConfig: ITriDialogBaseConfig;
-
         hasAny(namespace: string): boolean {
             return this.dialogs.some((dialog) => dialog.namespace === namespace);
         }
@@ -44,32 +41,26 @@ module tri.dialog {
 
         triggerDialog(dialog: ITriDialog): ITriDialogManagerService {
             if (!this.roots.hasOwnProperty(dialog.namespace)) {
-                this.$_$log.error(new Error('TriDialog: rootCtrl ' + dialog.namespace + ' is not registered!'));
-                return this;
+                throw new Error('TriDialog: rootCtrl ' + dialog.namespace + ' is not registered!');
             }
-            this.roots[dialog.namespace].broadcast(this.$_dialogConfig.eventOpen, this.registerDialog(dialog));
+            this.roots[dialog.namespace].broadcast(conf.eventOpen, this.registerDialog(dialog));
             return this;
         }
 
         closeDialog(notification: ITriDialogPromiseFinalisation): ITriDialogManagerService {
             if (!this.roots.hasOwnProperty(notification.dialog.namespace)) {
-                this.$_$log.error(
-                    new Error('TriDialog: rootCtrl ' + notification.dialog.namespace + ' is not registered!')
-                );
-                return this;
+                throw new Error('TriDialog: rootCtrl ' + notification.dialog.namespace + ' is not registered!');
             }
-            this.roots[notification.dialog.namespace].broadcast(this.$_dialogConfig.eventClose, notification);
+            this.roots[notification.dialog.namespace].broadcast(conf.eventClose, notification);
             return this;
         }
 
         registerRoot(ctrl: ITriDialogRootCtrl): ITriDialogManagerService {
             if (!ctrl.namespace) {
-                this.$_$log.error(new Error('TriDialog: rootCtrl has no namespace assigned!'));
-                return this;
+                throw new Error('TriDialog: rootCtrl has no namespace assigned!');
             }
             if (this.roots.hasOwnProperty(ctrl.namespace)) {
-                this.$_$log.error(new Error('TriDialog: rootCtrl ' + ctrl.namespace + ' already registered!'));
-                return this;
+                throw new Error('TriDialog: rootCtrl ' + ctrl.namespace + ' already registered!');
             }
             this.roots[ctrl.namespace] = ctrl;
             return this;
@@ -77,8 +68,7 @@ module tri.dialog {
 
         unRegisterRoot(ctrl: ITriDialogRootCtrl): ITriDialogManagerService {
             if (!this.roots.hasOwnProperty(ctrl.namespace)) {
-                this.$_$log.error(new Error('TriDialog: rootCtrl ' + ctrl.namespace + ' is not registered!'));
-                return this;
+                throw new Error('TriDialog: rootCtrl ' + ctrl.namespace + ' is not registered!');
             }
             delete this.roots[ctrl.namespace];
             return this;
@@ -88,20 +78,15 @@ module tri.dialog {
     mod.provider('triDialogManager', [
         'triDialogConfig',
         (triDialogConfig: ITriDialogBaseConfig): ITriDialogManagerProvider => ({
-            config(cfg) {
+            config(cfg: ITriDialogProviderConfig): ITriDialogManagerProvider {
                 angular.extend(triDialogConfig, cfg);
                 return this;
             },
-            $get: ['$log', 'triDialogConfig', (
-                $log: ng.ILogService,
-                triDialogConfig: ITriDialogBaseConfig
-            ): ITriDialogManagerService => {
-                angular.extend(DialogManagerService.prototype, {
-                    $_$log: $log,
-                    $_dialogConfig: triDialogConfig
-                });
-                return new DialogManagerService();
-            }]
+            when(label: string, config: ITriDialogConfig): ITriDialogManagerProvider {
+                definitions[label] = config;
+                return this;
+            },
+            $get: () => new DialogManagerService()
         })
     ]);
 

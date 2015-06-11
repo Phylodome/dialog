@@ -116,6 +116,7 @@ declare module tri.dialog {
 
     interface ITriDialogManagerProvider {
         config(config: ITriDialogProviderConfig): ITriDialogManagerProvider;
+        when(label: string, config: ITriDialogConfig): ITriDialogManagerProvider;
     }
 
 }
