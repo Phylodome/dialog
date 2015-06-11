@@ -1,7 +1,7 @@
 triAngular Dialog
 =================
 
-![bower package 0.3.0-alpha](https://img.shields.io/badge/bower_package-0.3.0--beta-yellow.svg?style=flat-square)
+![bower package 0.3.0](https://img.shields.io/badge/bower_package-0.3.0-green.svg?style=flat-square)
 ![built with gulp](https://img.shields.io/badge/built_with-gulp-lightgrey.svg?style=flat-square)
 ![license wtf](https://img.shields.io/badge/license-wtf-blue.svg?style=flat-square)
 
