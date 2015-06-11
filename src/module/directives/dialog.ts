@@ -37,7 +37,9 @@ module tri.dialog {
                     var css: ITriDialogStyle = {
                         zIndex: dialogConfig.baseZindex + (dialog.label + 1) * 2
                     };
+                    /* tslint:disable:triple-equals */
                     if (dialogConfig.processTopOffset || dialog.topOffset != null) {
+                        /* tslint:enable:triple-equals */
                         css.top = dialogUtilities.getTopOffset(dialog.topOffset);
                     }
                     return css;
@@ -59,11 +61,11 @@ module tri.dialog {
                     dialogRootCtrl.dialogs[dialog.label] = clone;
 
                     $timeout(() => {
-                        dialog.notify('opening');
+                        dialog.notify(noty.Opening);
                     }, 1);
 
                     $animate.enter(clone, element.parent(), element, () => {
-                        dialog.notify('open');
+                        dialog.notify(noty.Open);
                     });
                 });
             });
@@ -77,7 +79,7 @@ module tri.dialog {
                     dialogElementScope = dialogElement.scope();
 
                     $animate.leave(dialogElement, () => {
-                        closedDialog.notify('closed');
+                        closedDialog.notify(noty.Closed);
                         dialogElementScope.$destroy();
                         dialogElement.removeData().children().removeData();
                         closedDialog.destroy(notification);
@@ -125,11 +127,11 @@ module tri.dialog {
                     element.children().data('$triDialogController', dialogCtrl);
                 }
                 innerLink(scope);
-                dialog.notify('templateLoaded');
+                dialog.notify(noty.TemplateLoaded);
                 scope.$broadcast(dialogConfig.eventPrefix + dialogConfig.eventTemplate + dialogConfig.eventLoaded);
             }).error(() => {
                 scope.$broadcast(dialogConfig.eventPrefix + dialogConfig.eventTemplate + dialogConfig.eventError);
-                dialog.notify('templateError');
+                dialog.notify(noty.TemplateError);
                 $log.error(new Error('triDialog: could not load template!'));
             });
 

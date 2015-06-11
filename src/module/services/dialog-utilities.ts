@@ -43,7 +43,9 @@ module tri.dialog {
             var _ts = this.getTopScroll();
             var _parsed = parseInt(topOffset, 10);
 
+            /* tslint:disable:triple-equals */
             if (topOffset == null) {
+                /* tslint:enable:triple-equals */
                 return _ts + _vh / 5 + 'px';
             } else if (!isNaN(_parsed)) {
                 if (angular.isString(topOffset) && topOffset.charAt(topOffset.length - 1) === '%') {

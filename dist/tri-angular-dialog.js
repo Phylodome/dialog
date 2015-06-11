@@ -3,9 +3,40 @@ var tri;
     var dialog;
     (function (dialog) {
         'use strict';
-        dialog.mod = angular.module('triNgDialog', [
-            'ngAnimate'
-        ]);
+        (function (noty) {
+            noty[noty["Accepted"] = 0] = "Accepted";
+            noty[noty["Cancelled"] = 1] = "Cancelled";
+            noty[noty["Closed"] = 2] = "Closed";
+            noty[noty["Closing"] = 3] = "Closing";
+            noty[noty["ClosingEsc"] = 4] = "ClosingEsc";
+            noty[noty["ClosingMask"] = 5] = "ClosingMask";
+            noty[noty["Open"] = 6] = "Open";
+            noty[noty["Opening"] = 7] = "Opening";
+            noty[noty["TemplateError"] = 8] = "TemplateError";
+            noty[noty["TemplateLoaded"] = 9] = "TemplateLoaded";
+        })(dialog.noty || (dialog.noty = {}));
+        var noty = dialog.noty;
+        dialog.conf = {
+            baseZindex: 3000,
+            rootClass: 'dialog-root',
+            maskClass: 'dialog-mask',
+            dialogClass: 'dialog',
+            mainNamespace: 'main',
+            processTopOffset: false,
+            eventCore: 'TriDialog',
+            eventPrefix: 'triDialog',
+            eventOpen: 'Open',
+            eventClosing: 'Closing',
+            eventClose: 'Close',
+            eventLoaded: 'Loaded',
+            eventError: 'Error',
+            eventRequested: 'Requested',
+            eventTemplate: 'Template'
+        };
+        dialog.mod = angular
+            .module('triNgDialog', ['ngAnimate'])
+            .constant('triDialogNoty', noty)
+            .constant('triDialogConfig', dialog.conf);
     })(dialog = tri.dialog || (tri.dialog = {}));
 })(tri || (tri = {}));
 
@@ -77,7 +108,7 @@ var tri;
                         if (upperDialog && !upperDialog.modal) {
                             rootCtrl.broadcast(dialogConfig.eventClose, {
                                 accepted: false,
-                                dialog: upperDialog.notify('closing:Mask'),
+                                dialog: upperDialog.notify(dialog.noty.ClosingMask),
                                 reason: 'maskClick'
                             });
                             scope.$digest();
@@ -118,7 +149,7 @@ var tri;
                         if (!upperDialog.blockedDialog) {
                             $rootScope.$broadcast(upperDialog.namespace + dialogConfig.eventCore + dialogConfig.eventClose, {
                                 accepted: false,
-                                dialog: upperDialog.notify('closing:Esc'),
+                                dialog: upperDialog.notify(dialog.noty.ClosingEsc),
                                 reason: 'esc'
                             });
                             $rootScope.$digest();
@@ -204,7 +235,9 @@ var tri;
                         var css = {
                             zIndex: dialogConfig.baseZindex + (dialog.label + 1) * 2
                         };
+                        /* tslint:disable:triple-equals */
                         if (dialogConfig.processTopOffset || dialog.topOffset != null) {
+                            /* tslint:enable:triple-equals */
                             css.top = dialogUtilities.getTopOffset(dialog.topOffset);
                         }
                         return css;
@@ -222,10 +255,10 @@ var tri;
                             .addClass(dialogConfig.dialogClass + ' ' + dialog.dialogClass);
                         dialogRootCtrl.dialogs[dialog.label] = clone;
                         $timeout(function () {
-                            dialog.notify('opening');
+                            dialog.notify(dialog_1.noty.Opening);
                         }, 1);
                         $animate.enter(clone, element.parent(), element, function () {
-                            dialog.notify('open');
+                            dialog.notify(dialog_1.noty.Open);
                         });
                     });
                 });
@@ -236,7 +269,7 @@ var tri;
                     if (dialogElement && dialogElement.data('$triDialog') === closedDialog) {
                         dialogElementScope = dialogElement.scope();
                         $animate.leave(dialogElement, function () {
-                            closedDialog.notify('closed');
+                            closedDialog.notify(dialog_1.noty.Closed);
                             dialogElementScope.$destroy();
                             dialogElement.removeData().children().removeData();
                             closedDialog.destroy(notification);
@@ -272,11 +305,11 @@ var tri;
                         element.children().data('$triDialogController', dialogCtrl);
                     }
                     innerLink(scope);
-                    dialog.notify('templateLoaded');
+                    dialog.notify(dialog_1.noty.TemplateLoaded);
                     scope.$broadcast(dialogConfig.eventPrefix + dialogConfig.eventTemplate + dialogConfig.eventLoaded);
                 }).error(function () {
                     scope.$broadcast(dialogConfig.eventPrefix + dialogConfig.eventTemplate + dialogConfig.eventError);
-                    dialog.notify('templateError');
+                    dialog.notify(dialog_1.noty.TemplateError);
                     $log.error(new Error('triDialog: could not load template!'));
                 });
                 scope.$broadcast(dialogConfig.eventPrefix + dialogConfig.eventTemplate + dialogConfig.eventRequested);
@@ -289,32 +322,6 @@ var tri;
         }
         dialog_1.mod.directive('triDialog', triDialog);
         dialog_1.mod.directive('triDialog', triDialogManipulator);
-    })(dialog = tri.dialog || (tri.dialog = {}));
-})(tri || (tri = {}));
-
-var tri;
-(function (tri) {
-    var dialog;
-    (function (dialog) {
-        'use strict';
-        var triDialogConfig = {
-            baseZindex: 3000,
-            rootClass: 'dialog-root',
-            maskClass: 'dialog-mask',
-            dialogClass: 'dialog',
-            mainNamespace: 'main',
-            processTopOffset: false,
-            eventCore: 'TriDialog',
-            eventPrefix: 'triDialog',
-            eventOpen: 'Open',
-            eventClosing: 'Closing',
-            eventClose: 'Close',
-            eventLoaded: 'Loaded',
-            eventError: 'Error',
-            eventRequested: 'Requested',
-            eventTemplate: 'Template'
-        };
-        dialog.mod.constant('triDialogConfig', triDialogConfig);
     })(dialog = tri.dialog || (tri.dialog = {}));
 })(tri || (tri = {}));
 
@@ -445,7 +452,9 @@ var tri;
                 var _vh = this.getViewportSize().height;
                 var _ts = this.getTopScroll();
                 var _parsed = parseInt(topOffset, 10);
+                /* tslint:disable:triple-equals */
                 if (topOffset == null) {
+                    /* tslint:enable:triple-equals */
                     return _ts + _vh / 5 + 'px';
                 }
                 else if (!isNaN(_parsed)) {
@@ -501,7 +510,12 @@ var tri;
                     dialog: this,
                     reason: reason
                 });
-                return this.notify('closing' + (reject === undefined ? '' : (reject === true ? ':Cancel' : ':Accept')));
+                /* tslint:disable:triple-equals */
+                if (reject != null) {
+                    /* tslint:enable:triple-equals */
+                    this.notify(reject === true ? dialog.noty.Cancelled : dialog.noty.Accepted);
+                }
+                return this.notify(dialog.noty.Closing);
             };
             DialogData.prototype.destroy = function (notification) {
                 var key;
@@ -518,7 +532,7 @@ var tri;
                 }
             };
             DialogData.prototype.notify = function (status) {
-                this.$_deferred.notify({ dialog: this, status: status });
+                this.$_deferred.notify({ dialog: this, status: dialog.noty[status] });
                 return this;
             };
             DialogData.prototype.trigger = function () {

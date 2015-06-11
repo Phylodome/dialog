@@ -55,7 +55,7 @@ declare module tri.dialog {
         accept(reason?: any): ITriDialog;
         cancel(reason?: any): ITriDialog;
         destroy(notification: ITriDialogPromiseFinalisation): void;
-        notify(status: string): ITriDialog;
+        notify(status: number): ITriDialog;
         trigger(): ITriDialog;
     }
 

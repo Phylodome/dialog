@@ -8,6 +8,7 @@ var sourcemaps = require('gulp-sourcemaps');
 var ts = require('gulp-typescript');
 var tslint = require('gulp-tslint');
 var uglify = require('gulp-uglify');
+var rules = require('./tslint.json');
 
 var tsConfig = {
     declarationFiles: false,
@@ -41,6 +42,6 @@ gulp.task('ts-build-min', function () {
 
 gulp.task('ts-lint', function () {
     return gulp.src('src/module/**/*.ts')
-        .pipe(tslint())
+        .pipe(tslint({configuration: {rules: rules}}))
         .pipe(tslint.report('verbose'));
 });

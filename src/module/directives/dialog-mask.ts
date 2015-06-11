@@ -77,7 +77,7 @@ module tri.dialog {
                     if (upperDialog && !upperDialog.modal) {
                         rootCtrl.broadcast(dialogConfig.eventClose, {
                             accepted: false,
-                            dialog: upperDialog.notify('closing:Mask'),
+                            dialog: upperDialog.notify(noty.ClosingMask),
                             reason: 'maskClick'
                         });
                         scope.$digest();

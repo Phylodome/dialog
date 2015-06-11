@@ -1,5 +1,4 @@
 {
-  "rules": {
     "class-name": true,
     "curly": true,
     "forin": true,
@@ -49,7 +48,7 @@
     "quotemark": [true, "single"],
     "radix": true,
     "semicolon": true,
-    "triple-equals": [true, "allow-null-check"],
+    "triple-equals": true,
     "typedef-whitespace": [true,
       ["callSignature", "noSpace"],
       ["catchClause", "noSpace"],
@@ -68,4 +67,3 @@
       "check-type"
     ]
   }
-}

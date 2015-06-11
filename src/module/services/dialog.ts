@@ -65,7 +65,12 @@ module tri.dialog {
                 dialog: this,
                 reason: reason
             });
-            return this.notify('closing' + (reject === undefined ? '' : (reject === true ? ':Cancel' : ':Accept')));
+            /* tslint:disable:triple-equals */
+            if (reject != null) {
+                /* tslint:enable:triple-equals */
+                this.notify(reject === true ? noty.Cancelled : noty.Accepted);
+            }
+            return this.notify(noty.Closing);
         }
 
         public destroy(notification: ITriDialogPromiseFinalisation): void {
@@ -82,8 +87,8 @@ module tri.dialog {
             }
         }
 
-        public notify(status: string): ITriDialog {
-            this.$_deferred.notify({dialog: this, status: status});
+        public notify(status: number): ITriDialog {
+            this.$_deferred.notify({dialog: this, status: noty[status]});
             return this;
         }
 

@@ -26,7 +26,7 @@ module tri.dialog {
                             upperDialog.namespace + dialogConfig.eventCore + dialogConfig.eventClose,
                             {
                                 accepted: false,
-                                dialog: upperDialog.notify('closing:Esc'),
+                                dialog: upperDialog.notify(noty.ClosingEsc),
                                 reason: 'esc'
                             }
                         );
