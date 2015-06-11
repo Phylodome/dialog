@@ -33,6 +33,7 @@ var tri;
             eventRequested: 'Requested',
             eventTemplate: 'Template'
         };
+        dialog.definitions = {};
         dialog.mod = angular
             .module('triNgDialog', ['ngAnimate'])
             .constant('triDialogNoty', noty)
@@ -355,36 +356,31 @@ var tri;
             };
             DialogManagerService.prototype.triggerDialog = function (dialog) {
                 if (!this.roots.hasOwnProperty(dialog.namespace)) {
-                    this.$_$log.error(new Error('TriDialog: rootCtrl ' + dialog.namespace + ' is not registered!'));
-                    return this;
+                    throw new Error('TriDialog: rootCtrl ' + dialog.namespace + ' is not registered!');
                 }
-                this.roots[dialog.namespace].broadcast(this.$_dialogConfig.eventOpen, this.registerDialog(dialog));
+                this.roots[dialog.namespace].broadcast(dialog_1.conf.eventOpen, this.registerDialog(dialog));
                 return this;
             };
             DialogManagerService.prototype.closeDialog = function (notification) {
                 if (!this.roots.hasOwnProperty(notification.dialog.namespace)) {
-                    this.$_$log.error(new Error('TriDialog: rootCtrl ' + notification.dialog.namespace + ' is not registered!'));
-                    return this;
+                    throw new Error('TriDialog: rootCtrl ' + notification.dialog.namespace + ' is not registered!');
                 }
-                this.roots[notification.dialog.namespace].broadcast(this.$_dialogConfig.eventClose, notification);
+                this.roots[notification.dialog.namespace].broadcast(dialog_1.conf.eventClose, notification);
                 return this;
             };
             DialogManagerService.prototype.registerRoot = function (ctrl) {
                 if (!ctrl.namespace) {
-                    this.$_$log.error(new Error('TriDialog: rootCtrl has no namespace assigned!'));
-                    return this;
+                    throw new Error('TriDialog: rootCtrl has no namespace assigned!');
                 }
                 if (this.roots.hasOwnProperty(ctrl.namespace)) {
-                    this.$_$log.error(new Error('TriDialog: rootCtrl ' + ctrl.namespace + ' already registered!'));
-                    return this;
+                    throw new Error('TriDialog: rootCtrl ' + ctrl.namespace + ' already registered!');
                 }
                 this.roots[ctrl.namespace] = ctrl;
                 return this;
             };
             DialogManagerService.prototype.unRegisterRoot = function (ctrl) {
                 if (!this.roots.hasOwnProperty(ctrl.namespace)) {
-                    this.$_$log.error(new Error('TriDialog: rootCtrl ' + ctrl.namespace + ' is not registered!'));
-                    return this;
+                    throw new Error('TriDialog: rootCtrl ' + ctrl.namespace + ' is not registered!');
                 }
                 delete this.roots[ctrl.namespace];
                 return this;
@@ -398,13 +394,11 @@ var tri;
                     angular.extend(triDialogConfig, cfg);
                     return this;
                 },
-                $get: ['$log', 'triDialogConfig', function ($log, triDialogConfig) {
-                        angular.extend(DialogManagerService.prototype, {
-                            $_$log: $log,
-                            $_dialogConfig: triDialogConfig
-                        });
-                        return new DialogManagerService();
-                    }]
+                when: function (label, config) {
+                    dialog_1.definitions[label] = config;
+                    return this;
+                },
+                $get: function () { return new DialogManagerService(); }
             }); }
         ]);
     })(dialog = tri.dialog || (tri.dialog = {}));
@@ -484,12 +478,12 @@ var tri;
                     dialogClass: '',
                     topOffset: null,
                     modal: false,
-                    namespace: this.$_dialogConfig.mainNamespace,
+                    namespace: dialog.conf.mainNamespace,
                     templateUrl: null,
                     $_deferred: this.$_$q.defer()
                 });
                 if (!config.templateUrl) {
-                    this.$_$log.error(new Error('triNgDialog.DialogData() - initialData must contain defined "templateUrl"'));
+                    throw new Error('triNgDialog.DialogData() - initialData must contain defined "templateUrl"');
                 }
                 angular.extend(this, config, {
                     data: data,
@@ -540,21 +534,21 @@ var tri;
             };
             return DialogData;
         })();
-        dialog.mod.factory('triDialog', [
-            '$log',
-            '$q',
-            'triDialogConfig',
-            'triDialogManager',
-            function ($log, $q, dialogConfig, dialogManager) {
+        dialog.mod.factory('triDialog', ['$q', 'triDialogManager', function ($q, dialogManager) {
                 angular.extend(DialogData.prototype, {
-                    $_$log: $log,
                     $_$q: $q,
-                    $_dialogConfig: dialogConfig,
                     $_dialogManager: dialogManager
                 });
-                return function (config, data) { return new DialogData(config, data).trigger(); };
-            }
-        ]);
+                return function (config, data) {
+                    if (angular.isString(config)) {
+                        config = dialog.definitions[config];
+                    }
+                    if (!config || !angular.isObject(config)) {
+                        throw new TypeError('First argument passed to triDialog service should be valid string or object');
+                    }
+                    return new DialogData(config, data).trigger();
+                };
+            }]);
     })(dialog = tri.dialog || (tri.dialog = {}));
 })(tri || (tri = {}));
 

@@ -81,6 +81,7 @@ declare module tri.dialog {
 
     interface ITriDialogService {
         (config: ITriDialogConfig, data?: any): ITriDialog;
+        (configKey: string, data?: any): ITriDialog;
     }
 
     interface ITriElementSize {

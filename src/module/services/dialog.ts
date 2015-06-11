@@ -19,9 +19,7 @@ module tri.dialog {
 
         private $_deferred: ng.IDeferred<any>;
 
-        private $_$log: ng.ILogService;
         private $_$q: ng.IQService;
-        private $_dialogConfig: ITriDialogBaseConfig;
         private $_dialogManager: ITriDialogManagerService;
 
         constructor(config: ITriDialogConfig, data?: any) {
@@ -33,15 +31,13 @@ module tri.dialog {
                 dialogClass: '',
                 topOffset: null,
                 modal: false,
-                namespace: this.$_dialogConfig.mainNamespace,
+                namespace: conf.mainNamespace,
                 templateUrl: null,
                 $_deferred: this.$_$q.defer()
             });
 
             if (!config.templateUrl) {
-                this.$_$log.error(
-                    new Error('triNgDialog.DialogData() - initialData must contain defined "templateUrl"')
-                );
+                throw new Error('triNgDialog.DialogData() - initialData must contain defined "templateUrl"');
             }
             angular.extend(this, config, {
                 data: data,
@@ -99,25 +95,23 @@ module tri.dialog {
 
     }
 
-    mod.factory('triDialog', [
-        '$log',
-        '$q',
-        'triDialogConfig',
-        'triDialogManager',
-        function (
-            $log: ng.ILogService,
-            $q: ng.IQService,
-            dialogConfig: ITriDialogBaseConfig,
-            dialogManager: ITriDialogManagerService
-        ): ITriDialogService {
-            angular.extend(DialogData.prototype, {
-                $_$log: $log,
-                $_$q: $q,
-                $_dialogConfig: dialogConfig,
-                $_dialogManager: dialogManager
-            });
-            return (config: ITriDialogConfig, data?: any) => new DialogData(config, data).trigger();
-        }
-    ]);
+    mod.factory('triDialog', ['$q', 'triDialogManager', (
+        $q: ng.IQService,
+        dialogManager: ITriDialogManagerService
+    ): ITriDialogService => {
+        angular.extend(DialogData.prototype, {
+            $_$q: $q,
+            $_dialogManager: dialogManager
+        });
+        return (config: any, data?: any) => {
+            if (angular.isString(config)) {
+                config = definitions[config];
+            }
+            if (!config || !angular.isObject(config)) {
+                throw new TypeError('First argument passed to triDialog service should be valid string or object');
+            }
+            return new DialogData(config, data).trigger();
+        };
+    }]);
 
 }
