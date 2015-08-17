@@ -49,7 +49,6 @@ module tri.dialog {
                 scope.$on(rootCtrl.namespace + dialogConfig.eventCore + dialogConfig.eventOpen, update);
                 scope.$on(rootCtrl.namespace + dialogConfig.eventCore + dialogConfig.eventClosing, update);
 
-                $animate.leave(currentElement);
             };
 
             return {
