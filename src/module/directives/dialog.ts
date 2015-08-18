@@ -96,43 +96,68 @@ module tri.dialog {
         return {
             link: postLink,
             require: '^triDialogRoot',
-            restrict: 'A',
+            restrict: 'EA',
             scope: true,
             transclude: 'element',
             priority: 600
         };
     }
 
-    triDialog.$inject = ['$log', '$http', '$compile', '$templateCache', 'triDialogConfig'];
+    triDialog.$inject = ['$http', '$compile', '$templateCache', 'triDialogConfig'];
     function triDialog(
-        $log: ng.ILogService,
         $http: ng.IHttpService,
         $compile: ng.ICompileService,
         $templateCache: ng.ITemplateCacheService,
         dialogConfig: ITriDialogBaseConfig
     ) {
 
-        var postLink = (scope, element) => {
+        var postLink = (scope, element, attrs, dialogRootCtrl) => {
 
-            var dialog: ITriDialog = element.data('$triDialog');
-            var dialogCtrl = element.data('$triDialogController');
+            const dialog: ITriDialog = element.data('$triDialog');
+            const dialogCtrl = element.data('$triDialogController');
+
+            function wrapperCloseClick(e: MouseEvent): void {
+                if (!dialog.modal && e.target === element[0]) {
+                    element.off('click', wrapperCloseClick);
+                    dialogRootCtrl.broadcast(dialogConfig.eventClose, {
+                        accepted: false,
+                        dialog: dialog.notify(noty.ClosingMask),
+                        reason: 'maskClick'
+                    });
+                    scope.$digest();
+                }
+            }
+
+            // simulate that wrapper is a mask
+            if (attrs.hasOwnProperty('triIsMask')) {
+                element.on('click', wrapperCloseClick);
+            }
 
             $http.get(dialog.templateUrl, {
                 cache: $templateCache
-            }).success((response) => {
-                var innerLink;
-                element.html(response);
+            }).success((response: string) => {
+                const contentElement: ng.IAugmentedJQuery = element.find('tri-dialog-content');
+                let innerLink: ng.ITemplateLinkingFunction;
+
+                if (contentElement[0]) {
+                    contentElement.html(response);
+                } else {
+                    element.html(response);
+                }
+
                 innerLink = $compile(element.contents());
+
                 if (dialogCtrl) {
                     element.children().data('$triDialogController', dialogCtrl);
                 }
+
                 innerLink(scope);
                 dialog.notify(noty.TemplateLoaded);
                 scope.$broadcast(dialogConfig.eventPrefix + dialogConfig.eventTemplate + dialogConfig.eventLoaded);
             }).error(() => {
                 scope.$broadcast(dialogConfig.eventPrefix + dialogConfig.eventTemplate + dialogConfig.eventError);
                 dialog.notify(noty.TemplateError);
-                $log.error(new Error('triDialog: could not load template!'));
+                throw new Error('triDialog: could not load template!');
             });
 
             scope.$broadcast(dialogConfig.eventPrefix + dialogConfig.eventTemplate + dialogConfig.eventRequested);
@@ -142,7 +167,7 @@ module tri.dialog {
         return {
             link: postLink,
             require: '^triDialogRoot',
-            restrict: 'A'
+            restrict: 'EA'
         };
     }
 

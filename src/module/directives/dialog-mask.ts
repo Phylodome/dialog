@@ -55,7 +55,7 @@ module tri.dialog {
                 link: postLink,
                 priority: 100,
                 require: '^triDialogRoot',
-                restrict: 'A',
+                restrict: 'EA',
                 terminal: true,
                 transclude: 'element'
             };
@@ -91,7 +91,7 @@ module tri.dialog {
                 },
                 priority: -100,
                 require: '^triDialogRoot',
-                restrict: 'A'
+                restrict: 'EA'
             };
         }
     ]);

@@ -34,7 +34,10 @@ module tri.dialog {
     ]);
 
 
-    mod.directive('triDialogRoot', ['triDialogManager', (dialogManager: ITriDialogManagerService) => {
+    mod.directive('triDialogRoot', ['$animate', 'triDialogManager', (
+        $animate: ng.IAnimateService,
+        dialogManager: ITriDialogManagerService
+    ) => {
 
         var controller = function (
             $scope,
@@ -63,19 +66,23 @@ module tri.dialog {
         };
 
         var postLink = (scope, element, attrs, dialogRootCtrl) => {
+            const rootClass = dialogRootCtrl.rootClass + ' ' + conf.rootClass;
+
             dialogRootCtrl.listen(conf.eventOpen, () => {
-                element.addClass(conf.rootClass + ' ' + conf.rootClass);
+                $animate.addClass(element, rootClass);
             });
 
             dialogRootCtrl.listen(conf.eventClosing, () => {
                 if (!dialogManager.hasAny(dialogRootCtrl.namespace)) {
-                    element.removeClass(dialogRootCtrl.rootClass + ' ' + conf.rootClass);
+                    $animate.removeClass(element, rootClass);
                 }
             });
         };
 
         var template = (tElement) => {
-            tElement.append('<div tri:dialog-mask/><div tri:dialog/>');
+            if (!tElement.find('tri-dialog')[0]) {
+                tElement.append('<div tri-dialog-mask/><div tri-dialog/>');
+            }
         };
 
         return {

@@ -89,7 +89,7 @@ var tri;
                     link: postLink,
                     priority: 100,
                     require: '^triDialogRoot',
-                    restrict: 'A',
+                    restrict: 'EA',
                     terminal: true,
                     transclude: 'element'
                 };
@@ -122,7 +122,7 @@ var tri;
                     },
                     priority: -100,
                     require: '^triDialogRoot',
-                    restrict: 'A'
+                    restrict: 'EA'
                 };
             }
         ]);
@@ -157,7 +157,7 @@ var tri;
                 });
             }
         ]);
-        dialog.mod.directive('triDialogRoot', ['triDialogManager', function (dialogManager) {
+        dialog.mod.directive('triDialogRoot', ['$animate', 'triDialogManager', function ($animate, dialogManager) {
                 var controller = function ($scope, $attrs, dialogManager) {
                     var _this = this;
                     this.namespace = $attrs.triDialogRoot || dialog.conf.mainNamespace;
@@ -178,17 +178,20 @@ var tri;
                     });
                 };
                 var postLink = function (scope, element, attrs, dialogRootCtrl) {
+                    var rootClass = dialogRootCtrl.rootClass + ' ' + dialog.conf.rootClass;
                     dialogRootCtrl.listen(dialog.conf.eventOpen, function () {
-                        element.addClass(dialog.conf.rootClass + ' ' + dialog.conf.rootClass);
+                        $animate.addClass(element, rootClass);
                     });
                     dialogRootCtrl.listen(dialog.conf.eventClosing, function () {
                         if (!dialogManager.hasAny(dialogRootCtrl.namespace)) {
-                            element.removeClass(dialogRootCtrl.rootClass + ' ' + dialog.conf.rootClass);
+                            $animate.removeClass(element, rootClass);
                         }
                     });
                 };
                 var template = function (tElement) {
-                    tElement.append('<div tri:dialog-mask/><div tri:dialog/>');
+                    if (!tElement.find('tri-dialog')[0]) {
+                        tElement.append('<div tri-dialog-mask/><div tri-dialog/>');
+                    }
                 };
                 return {
                     controller: ['$scope', '$attrs', 'triDialogManager', controller],
@@ -277,22 +280,43 @@ var tri;
             return {
                 link: postLink,
                 require: '^triDialogRoot',
-                restrict: 'A',
+                restrict: 'EA',
                 scope: true,
                 transclude: 'element',
                 priority: 600
             };
         }
-        triDialog.$inject = ['$log', '$http', '$compile', '$templateCache', 'triDialogConfig'];
-        function triDialog($log, $http, $compile, $templateCache, dialogConfig) {
-            var postLink = function (scope, element) {
+        triDialog.$inject = ['$http', '$compile', '$templateCache', 'triDialogConfig'];
+        function triDialog($http, $compile, $templateCache, dialogConfig) {
+            var postLink = function (scope, element, attrs, dialogRootCtrl) {
                 var dialog = element.data('$triDialog');
                 var dialogCtrl = element.data('$triDialogController');
+                function wrapperCloseClick(e) {
+                    if (!dialog.modal && e.target === element[0]) {
+                        element.off('click', wrapperCloseClick);
+                        dialogRootCtrl.broadcast(dialogConfig.eventClose, {
+                            accepted: false,
+                            dialog: dialog.notify(dialog_1.noty.ClosingMask),
+                            reason: 'maskClick'
+                        });
+                        scope.$digest();
+                    }
+                }
+                // simulate that wrapper is a mask
+                if (attrs.hasOwnProperty('triIsMask')) {
+                    element.on('click', wrapperCloseClick);
+                }
                 $http.get(dialog.templateUrl, {
                     cache: $templateCache
                 }).success(function (response) {
+                    var contentElement = element.find('tri-dialog-content');
                     var innerLink;
-                    element.html(response);
+                    if (contentElement[0]) {
+                        contentElement.html(response);
+                    }
+                    else {
+                        element.html(response);
+                    }
                     innerLink = $compile(element.contents());
                     if (dialogCtrl) {
                         element.children().data('$triDialogController', dialogCtrl);
@@ -303,14 +327,14 @@ var tri;
                 }).error(function () {
                     scope.$broadcast(dialogConfig.eventPrefix + dialogConfig.eventTemplate + dialogConfig.eventError);
                     dialog.notify(dialog_1.noty.TemplateError);
-                    $log.error(new Error('triDialog: could not load template!'));
+                    throw new Error('triDialog: could not load template!');
                 });
                 scope.$broadcast(dialogConfig.eventPrefix + dialogConfig.eventTemplate + dialogConfig.eventRequested);
             };
             return {
                 link: postLink,
                 require: '^triDialogRoot',
-                restrict: 'A'
+                restrict: 'EA'
             };
         }
         dialog_1.mod.directive('triDialog', triDialog);
