@@ -8,8 +8,8 @@ module tri.dialog {
         '$document',
         'triDialogManager',
         function (
-            $rootScope: ng.IRootScopeService,
-            $document: ng.IDocumentService,
+            $rootScope: angular.IRootScopeService,
+            $document: angular.IDocumentService,
             dialogManager: ITriDialogManagerService
         ) {
 
@@ -35,7 +35,7 @@ module tri.dialog {
 
 
     mod.directive('triDialogRoot', ['$animate', 'triDialogManager', (
-        $animate: ng.IAnimateService,
+        $animate: angular.IAnimateService,
         dialogManager: ITriDialogManagerService
     ) => {
 

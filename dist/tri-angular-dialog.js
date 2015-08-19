@@ -75,7 +75,7 @@ var tri;
                             }
                         }
                         else if (currentElement) {
-                            $animate.leave(currentElement, function () {
+                            $animate.leave(currentElement)["finally"](function () {
                                 previousElement = null;
                             });
                             previousElement = currentElement;
@@ -253,7 +253,7 @@ var tri;
                         $timeout(function () {
                             dialog.notify(dialog_1.noty.Opening);
                         }, 1);
-                        $animate.enter(clone, element.parent(), element, function () {
+                        $animate.enter(clone, element.parent(), element)["finally"](function () {
                             dialog.notify(dialog_1.noty.Open);
                         });
                     });
@@ -264,7 +264,7 @@ var tri;
                     var dialogElementScope;
                     if (dialogElement && dialogElement.data('$triDialog') === closedDialog) {
                         dialogElementScope = dialogElement.scope();
-                        $animate.leave(dialogElement, function () {
+                        $animate.leave(dialogElement)["finally"](function () {
                             closedDialog.notify(dialog_1.noty.Closed);
                             dialogElementScope.$destroy();
                             dialogElement.removeData().children().removeData();

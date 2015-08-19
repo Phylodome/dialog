@@ -15,11 +15,11 @@ module tri.dialog {
         public namespace: string;
         public templateUrl: string;
         public data: any;
-        public promise: ng.IPromise<any>;
+        public promise: angular.IPromise<any>;
 
-        private $_deferred: ng.IDeferred<any>;
+        private $_deferred: angular.IDeferred<any>;
 
-        private $_$q: ng.IQService;
+        private $_$q: angular.IQService;
         private $_dialogManager: ITriDialogManagerService;
 
         constructor(config: ITriDialogConfig, data?: any) {
@@ -96,7 +96,7 @@ module tri.dialog {
     }
 
     mod.factory('triDialog', ['$q', 'triDialogManager', (
-        $q: ng.IQService,
+        $q: angular.IQService,
         dialogManager: ITriDialogManagerService
     ): ITriDialogService => {
         angular.extend(DialogData.prototype, {

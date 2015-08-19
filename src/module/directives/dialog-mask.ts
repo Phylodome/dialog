@@ -8,16 +8,16 @@ module tri.dialog {
         'triDialogConfig',
         'triDialogManager',
         function (
-            $animate: ng.IAnimateService,
+            $animate: angular.animate.IAnimateService,
             dialogConfig: ITriDialogBaseConfig,
             dialogManager: ITriDialogManagerService
         ) {
 
             var postLink = function (scope, element, attrs, rootCtrl, $transclude) {
 
-                var root: ng.IAugmentedJQuery = element.parent();
-                var previousElement: ng.IAugmentedJQuery = null;
-                var currentElement: ng.IAugmentedJQuery = null;
+                var root: angular.IAugmentedJQuery = element.parent();
+                var previousElement: angular.IAugmentedJQuery = null;
+                var currentElement: angular.IAugmentedJQuery = null;
 
                 var updateZIndex = function (mask) {
                     mask.css('z-index', dialogConfig.baseZindex + dialogManager.dialogs.length * 2 - 1);
@@ -38,7 +38,7 @@ module tri.dialog {
                             });
                         }
                     } else if (currentElement) {
-                        $animate.leave(currentElement, function () {
+                        $animate.leave(currentElement).finally(() => {
                             previousElement = null;
                         });
                         previousElement = currentElement;

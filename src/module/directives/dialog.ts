@@ -8,10 +8,10 @@ module tri.dialog {
         'triDialogManager', 'triDialogConfig', 'triDialogUtilities'
     ];
     function triDialogManipulator(
-        $animate: ng.IAnimateService,
-        $rootScope: ng.IRootScopeService,
-        $controller: ng.IControllerService,
-        $timeout: ng.ITimeoutService,
+        $animate: angular.animate.IAnimateService,
+        $rootScope: angular.IRootScopeService,
+        $controller: angular.IControllerService,
+        $timeout: angular.ITimeoutService,
         dialogManager: ITriDialogManagerService,
         dialogConfig: ITriDialogBaseConfig,
         dialogUtilities: ITriDialogUtilitiesService
@@ -64,7 +64,7 @@ module tri.dialog {
                         dialog.notify(noty.Opening);
                     }, 1);
 
-                    $animate.enter(clone, element.parent(), element, () => {
+                    $animate.enter(clone, element.parent(), element).finally(() => {
                         dialog.notify(noty.Open);
                     });
                 });
@@ -78,7 +78,7 @@ module tri.dialog {
                 if (dialogElement && dialogElement.data('$triDialog') === closedDialog) {
                     dialogElementScope = dialogElement.scope();
 
-                    $animate.leave(dialogElement, () => {
+                    $animate.leave(dialogElement).finally(() => {
                         closedDialog.notify(noty.Closed);
                         dialogElementScope.$destroy();
                         dialogElement.removeData().children().removeData();
@@ -105,9 +105,9 @@ module tri.dialog {
 
     triDialog.$inject = ['$http', '$compile', '$templateCache', 'triDialogConfig'];
     function triDialog(
-        $http: ng.IHttpService,
-        $compile: ng.ICompileService,
-        $templateCache: ng.ITemplateCacheService,
+        $http: angular.IHttpService,
+        $compile: angular.ICompileService,
+        $templateCache: angular.ITemplateCacheService,
         dialogConfig: ITriDialogBaseConfig
     ) {
 
@@ -136,8 +136,8 @@ module tri.dialog {
             $http.get(dialog.templateUrl, {
                 cache: $templateCache
             }).success((response: string) => {
-                const contentElement: ng.IAugmentedJQuery = element.find('tri-dialog-content');
-                let innerLink: ng.ITemplateLinkingFunction;
+                const contentElement: angular.IAugmentedJQuery = element.find('tri-dialog-content');
+                let innerLink: angular.ITemplateLinkingFunction;
 
                 if (contentElement[0]) {
                     contentElement.html(response);
