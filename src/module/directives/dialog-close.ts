@@ -8,22 +8,24 @@ module tri.dialog {
     }
 
     function link(
-        scope,
+        scope: angular.IScope,
         element: angular.IAugmentedJQuery,
         attrs: ITriDialogCloseAttrs,
         dialogCtrl: TriDialogController
     ): void {
         element.on('click', () => {
-            switch (attrs.triDialogClose) {
-                case 'accept':
-                    dialogCtrl.$dialog.accept();
-                    break;
-                case 'cancel':
-                    dialogCtrl.$dialog.cancel();
-                    break;
-                default:
-                    dialogCtrl.$dialog.close();
-            }
+            scope.$apply(() => {
+                switch (attrs.triDialogClose) {
+                    case 'accept':
+                        dialogCtrl.$dialog.accept();
+                        break;
+                    case 'cancel':
+                        dialogCtrl.$dialog.cancel();
+                        break;
+                    default:
+                        dialogCtrl.$dialog.close();
+                }
+            });
         });
     }
 
