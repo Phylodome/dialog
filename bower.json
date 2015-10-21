@@ -1,6 +1,6 @@
 {
   "name": "tri-angular-dialog",
-  "version": "0.4.2",
+  "version": "0.4.3",
   "main": [
     "dist/*.d.ts",
     "dist/*.js",
