@@ -1,25 +1,26 @@
 {
   "name": "tri-angular-dialog",
-  "version": "0.4.0",
+  "version": "0.4.1",
   "repository": {
     "type": "git",
     "url": "https://github.com/triangular/dialog.git"
   },
+  "licwnse": "WTFPL",
   "devDependencies": {
-    "del": "1.2.1",
+    "del": "2.0.2",
     "extend": "3.0.0",
     "gulp": "3.9.0",
     "gulp-bower": "0.0.10",
     "gulp-concat": "2.6.0",
     "gulp-dereserve": "0.2.1",
     "gulp-plumber": "1.0.1",
-    "gulp-sourcemaps": "1.5.2",
-    "gulp-tslint": "3.2.0",
-    "gulp-typescript": "2.8.0",
-    "gulp-uglify": "1.2.0",
+    "gulp-sourcemaps": "1.6.0",
+    "gulp-tslint": "3.3.1",
+    "gulp-typescript": "2.9.2",
+    "gulp-uglify": "1.4.2",
     "main-bower-files": "2.9.0",
     "require-dir": "0.3.0",
-    "run-sequence": "1.1.2",
-    "typescript": "1.5.3"
+    "run-sequence": "1.1.4",
+    "typescript": "1.6.2"
   }
 }

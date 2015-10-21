@@ -116,6 +116,7 @@ declare module tri.dialog {
     }
 
     interface ITriDialogManagerProvider {
+        $get: () => ITriDialogManagerService;
         config(config: ITriDialogProviderConfig): ITriDialogManagerProvider;
         when(label: string, config: ITriDialogConfig): ITriDialogManagerProvider;
     }

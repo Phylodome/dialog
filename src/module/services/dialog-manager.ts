@@ -86,7 +86,7 @@ module tri.dialog {
                 definitions[label] = config;
                 return this;
             },
-            $get: () => new DialogManagerService()
+            $get: (): DialogManagerService => new DialogManagerService()
         })
     ]);
 

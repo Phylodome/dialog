@@ -1,8 +1,10 @@
 'use strict';
 
-var gulp = require('gulp');
-var del = require('del');
+const gulp = require('gulp');
+const del = require('del');
 
-gulp.task('clean', function (done) {
-    del(['demo/vendor', 'dist/'], done);
+gulp.task('clean', (done) => {
+    del(['demo/vendor', 'dist/']).then(() => {
+        done();
+    });
 });
