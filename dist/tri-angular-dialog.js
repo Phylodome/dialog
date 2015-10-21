@@ -48,16 +48,18 @@ var tri;
         'use strict';
         function link(scope, element, attrs, dialogCtrl) {
             element.on('click', function () {
-                switch (attrs.triDialogClose) {
-                    case 'accept':
-                        dialogCtrl.$dialog.accept();
-                        break;
-                    case 'cancel':
-                        dialogCtrl.$dialog.cancel();
-                        break;
-                    default:
-                        dialogCtrl.$dialog.close();
-                }
+                scope.$apply(function () {
+                    switch (attrs.triDialogClose) {
+                        case 'accept':
+                            dialogCtrl.$dialog.accept();
+                            break;
+                        case 'cancel':
+                            dialogCtrl.$dialog.cancel();
+                            break;
+                        default:
+                            dialogCtrl.$dialog.close();
+                    }
+                });
             });
         }
         triDialogClose.$inject = [];
