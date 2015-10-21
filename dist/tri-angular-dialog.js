@@ -46,6 +46,37 @@ var tri;
     var dialog;
     (function (dialog) {
         'use strict';
+        function link(scope, element, attrs, dialogCtrl) {
+            element.on('click', function () {
+                switch (attrs.triDialogClose) {
+                    case 'accept':
+                        dialogCtrl.$dialog.accept();
+                        break;
+                    case 'cancel':
+                        dialogCtrl.$dialog.cancel();
+                        break;
+                    default:
+                        dialogCtrl.$dialog.close();
+                }
+            });
+        }
+        triDialogClose.$inject = [];
+        function triDialogClose() {
+            return {
+                link: link,
+                require: '^triDialog',
+                restrict: 'A'
+            };
+        }
+        dialog.mod.directive('triDialogClose', triDialogClose);
+    })(dialog = tri.dialog || (tri.dialog = {}));
+})(tri || (tri = {}));
+
+var tri;
+(function (tri) {
+    var dialog;
+    (function (dialog) {
+        'use strict';
         dialog.mod.directive('triDialogMask', [
             '$animate',
             'triDialogConfig',
@@ -209,6 +240,14 @@ var tri;
     var dialog;
     (function (dialog_1) {
         'use strict';
+        var DataLabels = (function () {
+            function DataLabels() {
+                this.userCtrl = '$triDialogUserController';
+                this.dialog = '$triDialog';
+            }
+            return DataLabels;
+        })();
+        var dataLabels = new DataLabels();
         triDialogManipulator.$inject = [
             '$animate', '$rootScope', '$controller', '$timeout',
             'triDialogManager', 'triDialogConfig', 'triDialogUtilities'
@@ -225,7 +264,7 @@ var tri;
                         if (dialog.controllerAs) {
                             dialogScope[dialog.controllerAs] = dialogCtrl;
                         }
-                        clone.data('$triDialogController', dialogCtrl);
+                        clone.data(dataLabels.userCtrl, dialogCtrl);
                     };
                     var getCss = function () {
                         var css = {
@@ -246,7 +285,7 @@ var tri;
                             dialogScope.$dialog = dialog;
                         }
                         clone
-                            .data('$triDialog', dialog)
+                            .data(dataLabels.dialog, dialog)
                             .css(getCss())
                             .addClass(dialogConfig.dialogClass + ' ' + dialog.dialogClass);
                         dialogRootCtrl.dialogs[dialog.label] = clone;
@@ -262,7 +301,7 @@ var tri;
                     var closedDialog = notification.dialog;
                     var dialogElement = dialogRootCtrl.dialogs[closedDialog.label];
                     var dialogElementScope;
-                    if (dialogElement && dialogElement.data('$triDialog') === closedDialog) {
+                    if (dialogElement && dialogElement.data(dataLabels.dialog) === closedDialog) {
                         dialogElementScope = dialogElement.scope();
                         $animate.leave(dialogElement)["finally"](function () {
                             closedDialog.notify(dialog_1.noty.Closed);
@@ -286,11 +325,23 @@ var tri;
                 priority: 600
             };
         }
+        var TriDialogController = (function () {
+            function TriDialogController() {
+                this.$dialog = null;
+            }
+            TriDialogController.prototype.init = function ($dialog) {
+                this.$dialog = $dialog;
+            };
+            return TriDialogController;
+        })();
+        dialog_1.TriDialogController = TriDialogController;
         triDialog.$inject = ['$http', '$compile', '$templateCache', 'triDialogConfig'];
         function triDialog($http, $compile, $templateCache, dialogConfig) {
-            var postLink = function (scope, element, attrs, dialogRootCtrl) {
-                var dialog = element.data('$triDialog');
-                var dialogCtrl = element.data('$triDialogController');
+            var postLink = function (scope, element, attrs, _a) {
+                var dialogRootCtrl = _a[0], triDialogCtrl = _a[1];
+                var dialog = element.data(dataLabels.dialog);
+                var dialogCtrl = element.data(dataLabels.userCtrl);
+                triDialogCtrl.init(dialog);
                 function wrapperCloseClick(e) {
                     if (!dialog.modal && e.target === element[0]) {
                         element.off('click', wrapperCloseClick);
@@ -319,7 +370,7 @@ var tri;
                     }
                     innerLink = $compile(element.contents());
                     if (dialogCtrl) {
-                        element.children().data('$triDialogController', dialogCtrl);
+                        element.children().data(dataLabels.userCtrl, dialogCtrl);
                     }
                     innerLink(scope);
                     dialog.notify(dialog_1.noty.TemplateLoaded);
@@ -332,8 +383,9 @@ var tri;
                 scope.$broadcast(dialogConfig.eventPrefix + dialogConfig.eventTemplate + dialogConfig.eventRequested);
             };
             return {
+                controller: TriDialogController,
                 link: postLink,
-                require: '^triDialogRoot',
+                require: ['^triDialogRoot', 'triDialog'],
                 restrict: 'EA'
             };
         }

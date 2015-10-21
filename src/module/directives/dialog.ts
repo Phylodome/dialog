@@ -3,6 +3,13 @@ module tri.dialog {
 
     'use strict';
 
+    class DataLabels {
+        userCtrl = '$triDialogUserController';
+        dialog = '$triDialog';
+    }
+
+    const dataLabels = new DataLabels();
+
     triDialogManipulator.$inject = [
         '$animate', '$rootScope', '$controller', '$timeout',
         'triDialogManager', 'triDialogConfig', 'triDialogUtilities'
@@ -15,7 +22,7 @@ module tri.dialog {
         dialogManager: ITriDialogManagerService,
         dialogConfig: ITriDialogBaseConfig,
         dialogUtilities: ITriDialogUtilitiesService
-    ) {
+    ): angular.IDirective {
 
         var postLink = (scope, element, attrs, dialogRootCtrl, $transcludeFn) => {
 
@@ -30,7 +37,7 @@ module tri.dialog {
                     if (dialog.controllerAs) {
                         dialogScope[dialog.controllerAs] = dialogCtrl;
                     }
-                    clone.data('$triDialogController', dialogCtrl);
+                    clone.data(dataLabels.userCtrl, dialogCtrl);
                 };
 
                 var getCss = () => {
@@ -54,7 +61,7 @@ module tri.dialog {
                     }
 
                     clone
-                        .data('$triDialog', dialog)
+                        .data(dataLabels.dialog, dialog)
                         .css(getCss())
                         .addClass(dialogConfig.dialogClass + ' ' + dialog.dialogClass);
 
@@ -75,7 +82,7 @@ module tri.dialog {
                 var dialogElement = dialogRootCtrl.dialogs[closedDialog.label];
                 var dialogElementScope;
 
-                if (dialogElement && dialogElement.data('$triDialog') === closedDialog) {
+                if (dialogElement && dialogElement.data(dataLabels.dialog) === closedDialog) {
                     dialogElementScope = dialogElement.scope();
 
                     $animate.leave(dialogElement).finally(() => {
@@ -103,6 +110,15 @@ module tri.dialog {
         };
     }
 
+    export class TriDialogController {
+
+        public $dialog: ITriDialog = null;
+
+        public init($dialog: ITriDialog) {
+            this.$dialog = $dialog;
+        }
+    }
+
     triDialog.$inject = ['$http', '$compile', '$templateCache', 'triDialogConfig'];
     function triDialog(
         $http: angular.IHttpService,
@@ -111,10 +127,17 @@ module tri.dialog {
         dialogConfig: ITriDialogBaseConfig
     ) {
 
-        var postLink = (scope, element, attrs, dialogRootCtrl) => {
+        var postLink = (
+            scope,
+            element: angular.IAugmentedJQuery,
+            attrs,
+            [dialogRootCtrl, triDialogCtrl]: [ITriDialogRootCtrl, TriDialogController]
+        ) => {
 
-            const dialog: ITriDialog = element.data('$triDialog');
-            const dialogCtrl = element.data('$triDialogController');
+            const dialog = element.data<ITriDialog>(dataLabels.dialog);
+            const dialogCtrl = element.data<any>(dataLabels.userCtrl);
+
+            triDialogCtrl.init(dialog);
 
             function wrapperCloseClick(e: MouseEvent): void {
                 if (!dialog.modal && e.target === element[0]) {
@@ -148,7 +171,7 @@ module tri.dialog {
                 innerLink = $compile(element.contents());
 
                 if (dialogCtrl) {
-                    element.children().data('$triDialogController', dialogCtrl);
+                    element.children().data(dataLabels.userCtrl, dialogCtrl);
                 }
 
                 innerLink(scope);
@@ -165,8 +188,9 @@ module tri.dialog {
         };
 
         return {
+            controller: TriDialogController,
             link: postLink,
-            require: '^triDialogRoot',
+            require: ['^triDialogRoot', 'triDialog'],
             restrict: 'EA'
         };
     }

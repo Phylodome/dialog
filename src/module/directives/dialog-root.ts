@@ -14,7 +14,7 @@ module tri.dialog {
         ) {
 
             // TODO: add some namespaces
-            $document.on('keydown keypress', function (event) {
+            $document.on('keydown keypress', function (event: KeyboardEvent) {
                 // kind'a imperative, but we do not know if ng-app/$rootElement is on body/html or not
                 var upperDialog: ITriDialog;
                 if (event.which === 27 && dialogManager.dialogs.length) {
