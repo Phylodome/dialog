@@ -1,9 +1,11 @@
 triAngular Dialog
 =================
 
-![bower package 0.3.0](https://img.shields.io/badge/bower_package-0.3.0-green.svg?style=flat-square)
-![built with gulp](https://img.shields.io/badge/built_with-gulp-lightgrey.svg?style=flat-square)
-![license wtf](https://img.shields.io/badge/license-wtf-blue.svg?style=flat-square)
+[![Bower version](https://badge.fury.io/bo/tri-angular-dialog.svg)](https://badge.fury.io/bo/tri-angular-dialog)
+[![Bower Dependencies](https://www.versioneye.com/user/projects/565414fbff016c003a00049b/badge.svg?style=flat)](https://www.versioneye.com/user/projects/565414fbff016c003a00049b)
+[![NPM Dependencies](https://www.versioneye.com/user/projects/5654153aff016c0033000958/badge.svg?style=flat)](https://www.versioneye.com/user/projects/5654153aff016c0033000958)
+
+![License WTFPL](https://img.shields.io/badge/license-wtf-blue.svg?style=flat-square)
 
 AngularJS multi modal dialog module
 
@@ -16,7 +18,7 @@ Installing
 To start using triAngular Dialog in your app run:
 
 ```
-bower install tri-angular-dialog --save-dev
+bower install tri-angular-dialog
 ```
 
 Then add 'triNgDialog' dependency to modules that will use triDialog (you need to have ngAnimate installed):

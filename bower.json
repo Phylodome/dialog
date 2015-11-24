@@ -1,6 +1,6 @@
 {
   "name": "tri-angular-dialog",
-  "version": "0.4.3",
+  "version": "0.4.4",
   "main": [
     "dist/*.d.ts",
     "dist/*.js",
@@ -16,14 +16,11 @@
     ".gitignore"
   ],
   "dependencies": {
-    "angular": "1.4.7",
-    "angular-animate": "1.4.7"
+    "angular": "^1.4.0",
+    "angular-animate": "^1.4.0"
   },
   "exportsOverride": {
     "angular": {"./": ["angular.js"]},
     "angular-animate": {"./": ["angular-animate.js"]}
-  },
-  "resolutions": {
-    "angular": "1.4.7"
   }
 }
