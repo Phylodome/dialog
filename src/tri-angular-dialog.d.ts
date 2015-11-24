@@ -57,6 +57,9 @@ declare module tri.dialog {
         destroy(notification: ITriDialogPromiseFinalisation): void;
         notify(status: number): ITriDialog;
         trigger(): ITriDialog;
+        addClass(cssClass: string): void;
+        removeClass(cssClass: string): void;
+        toggleClass(cssClass: string, condition?: boolean): void;
     }
 
     interface ITriDialogPromiseNotification {

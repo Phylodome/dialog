@@ -26,7 +26,7 @@ module tri.dialog {
 
         var postLink = (scope, element, attrs, dialogRootCtrl, $transcludeFn) => {
 
-            dialogRootCtrl.listen(dialogConfig.eventOpen, function (e, dialog: ITriDialog) {
+            dialogRootCtrl.listen(dialogConfig.eventOpen, function (e, dialog: DialogData) {
 
                 var setController = (clone, dialogScope) => {
                     var dialogCtrl = $controller(dialog.controller, {
@@ -53,6 +53,8 @@ module tri.dialog {
                 };
 
                 $transcludeFn($rootScope.$new(), (clone, dialogScope) => {
+                    const contentElement: angular.IAugmentedJQuery = clone.find('tri-dialog-content');
+                    dialog.setContentElement(contentElement[0] ? contentElement : element);
 
                     if (dialog.controller) {
                         setController(clone, dialogScope);

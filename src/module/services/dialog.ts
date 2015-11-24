@@ -3,7 +3,7 @@ module tri.dialog {
 
     'use strict';
 
-    class DialogData implements ITriDialog {
+    export class DialogData implements ITriDialog {
 
         public blockedDialog: boolean;
         public controller: string;
@@ -18,6 +18,7 @@ module tri.dialog {
         public promise: angular.IPromise<any>;
 
         private $_deferred: angular.IDeferred<any>;
+        private $_contentElement: angular.IAugmentedJQuery;
 
         private $_$q: angular.IQService;
         private $_dialogManager: ITriDialogManagerService;
@@ -91,6 +92,22 @@ module tri.dialog {
         public trigger(): ITriDialog {
             this.$_dialogManager.triggerDialog(this);
             return this;
+        }
+
+        public setContentElement(element: angular.IAugmentedJQuery): void {
+            this.$_contentElement = element;
+        }
+
+        addClass(cssClass: string): void {
+            this.$_contentElement.addClass(cssClass);
+        }
+
+        removeClass(cssClass: string): void {
+            this.$_contentElement.removeClass(cssClass);
+        }
+
+        toggleClass(cssClass: string, condition?: boolean): void {
+            this.$_contentElement.toggleClass(cssClass, condition);
         }
 
     }

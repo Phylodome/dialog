@@ -280,6 +280,8 @@ var tri;
                         return css;
                     };
                     $transcludeFn($rootScope.$new(), function (clone, dialogScope) {
+                        var contentElement = clone.find('tri-dialog-content');
+                        dialog.setContentElement(contentElement[0] ? contentElement : element);
                         if (dialog.controller) {
                             setController(clone, dialogScope);
                         }
@@ -609,8 +611,21 @@ var tri;
                 this.$_dialogManager.triggerDialog(this);
                 return this;
             };
+            DialogData.prototype.setContentElement = function (element) {
+                this.$_contentElement = element;
+            };
+            DialogData.prototype.addClass = function (cssClass) {
+                this.$_contentElement.addClass(cssClass);
+            };
+            DialogData.prototype.removeClass = function (cssClass) {
+                this.$_contentElement.removeClass(cssClass);
+            };
+            DialogData.prototype.toggleClass = function (cssClass, condition) {
+                this.$_contentElement.toggleClass(cssClass, condition);
+            };
             return DialogData;
         })();
+        dialog.DialogData = DialogData;
         dialog.mod.factory('triDialog', ['$q', 'triDialogManager', function ($q, dialogManager) {
                 angular.extend(DialogData.prototype, {
                     $_$q: $q,
