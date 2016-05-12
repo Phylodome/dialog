@@ -292,7 +292,7 @@ var tri;
                             .data(dataLabels.dialog, dialog)
                             .css(getCss())
                             .addClass(dialogConfig.dialogClass + ' ' + dialog.dialogClass);
-                        dialogRootCtrl.dialogs[dialog.label] = clone;
+                        dialogRootCtrl.dialogs[dialog.label] = [clone, dialogScope];
                         $timeout(function () {
                             dialog.notify(dialog_1.noty.Opening);
                         }, 1);
@@ -303,10 +303,11 @@ var tri;
                 });
                 dialogRootCtrl.listen(dialogConfig.eventClose, function (e, notification) {
                     var closedDialog = notification.dialog;
-                    var dialogElement = dialogRootCtrl.dialogs[closedDialog.label];
+                    var dialogElementAndScope = dialogRootCtrl.dialogs[closedDialog.label];
+                    var dialogElement = dialogElementAndScope && dialogElementAndScope[0];
                     var dialogElementScope;
                     if (dialogElement && dialogElement.data(dataLabels.dialog) === closedDialog) {
-                        dialogElementScope = dialogElement.scope();
+                        dialogElementScope = dialogRootCtrl.dialogs[closedDialog.label][1];
                         $animate.leave(dialogElement)["finally"](function () {
                             closedDialog.notify(dialog_1.noty.Closed);
                             dialogElementScope.$destroy();

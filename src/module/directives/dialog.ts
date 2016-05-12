@@ -67,7 +67,7 @@ module tri.dialog {
                         .css(getCss())
                         .addClass(dialogConfig.dialogClass + ' ' + dialog.dialogClass);
 
-                    dialogRootCtrl.dialogs[dialog.label] = clone;
+                    dialogRootCtrl.dialogs[dialog.label] = [clone, dialogScope];
 
                     $timeout(() => {
                         dialog.notify(noty.Opening);
@@ -81,11 +81,12 @@ module tri.dialog {
 
             dialogRootCtrl.listen(dialogConfig.eventClose, (e, notification: ITriDialogPromiseFinalisation) => {
                 var closedDialog: ITriDialog = notification.dialog;
-                var dialogElement = dialogRootCtrl.dialogs[closedDialog.label];
+                var dialogElementAndScope = dialogRootCtrl.dialogs[closedDialog.label];
+                var dialogElement = dialogElementAndScope && dialogElementAndScope[0];
                 var dialogElementScope;
 
                 if (dialogElement && dialogElement.data(dataLabels.dialog) === closedDialog) {
-                    dialogElementScope = dialogElement.scope();
+                    dialogElementScope = dialogRootCtrl.dialogs[closedDialog.label][1];
 
                     $animate.leave(dialogElement).finally(() => {
                         closedDialog.notify(noty.Closed);
